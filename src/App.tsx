@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useStore } from './store'
-import { LogoMark, Wordmark } from './components/ui'
+import { LogoMark, ThemeToggle, Wordmark } from './components/ui'
 import {
   IconChart,
   IconDashboard,
@@ -45,16 +45,19 @@ export default function App() {
     <div className="app">
       <aside className="sidebar no-print">
         <div className="brand">
-          {s.logoDataUrl ? (
-            <div className="row" style={{ gap: 12, flexWrap: 'nowrap' }}>
-              <LogoMark logoDataUrl={s.logoDataUrl} fallback={initials(company)} />
-              <div className="brand-text">
-                <strong>{company}</strong>
+          <div className="brand-row">
+            {s.logoDataUrl ? (
+              <div className="row" style={{ gap: 12, flexWrap: 'nowrap' }}>
+                <LogoMark logoDataUrl={s.logoDataUrl} fallback={initials(company)} />
+                <div className="brand-text">
+                  <strong>{company}</strong>
+                </div>
               </div>
-            </div>
-          ) : (
-            <Wordmark className="brand-logo" />
-          )}
+            ) : (
+              <Wordmark className="brand-logo" />
+            )}
+            <ThemeToggle />
+          </div>
           <div className="brand-text">
             <span>{s.tagline || 'إدارة المستثمرين والعوائد'}</span>
           </div>

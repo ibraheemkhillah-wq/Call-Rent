@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react'
 import { useStore } from '../store'
 import { Field, Wordmark } from '../components/ui'
-import { IconDownload, IconTrash, IconUpload } from '../components/Icons'
+import { IconDownload, IconMoon, IconSun, IconTrash, IconUpload } from '../components/Icons'
+import { THEME_LABELS, useTheme, type ThemeMode } from '../theme/theme'
 
 export function SettingsPage() {
   const { db, updateSettings, exportJson, importJson, resetAll } = useStore()
+  const { mode, theme, setMode } = useTheme()
   const s = db.settings
   const fileRef = useRef<HTMLInputElement>(null)
   const logoRef = useRef<HTMLInputElement>(null)
@@ -63,6 +65,30 @@ export function SettingsPage() {
           <span className={msg.ok ? 'pos' : 'neg'}>{msg.text}</span>
         </div>
       )}
+
+      <div className="card" style={{ marginBottom: 22 }}>
+        <div className="card-title">وضع العرض</div>
+        <div className="card-sub">
+          اختر الرؤية المريحة لعينك — الاختيار محفوظ على هذا الجهاز، ولا يؤثر على شكل
+          التقارير المصدَّرة (تبقى دائماً على ورق أبيض).
+        </div>
+        <div className="theme-choice">
+          {(['light', 'dark', 'system'] as ThemeMode[]).map((m) => (
+            <button
+              key={m}
+              className={mode === m ? 'active' : ''}
+              onClick={() => setMode(m)}
+              aria-pressed={mode === m}
+            >
+              {m === 'light' ? <IconSun size={17} /> : m === 'dark' ? <IconMoon size={17} /> : null}
+              {THEME_LABELS[m]}
+              {m === 'system' && mode === 'system' && (
+                <span className="muted">({theme === 'light' ? 'نهاري' : 'ليلي'})</span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="card" style={{ marginBottom: 22 }}>
         <div className="card-title">هوية الشركة</div>

@@ -6,25 +6,12 @@
    ═══════════════════════════════════════════════════════════ */
 
 :root {
-  /* ◆ الكحلي الرسمي #182B56 هو --navy-700 */
+  /* ◆ ألوان الهوية — ثابتة في الوضعين */
   --navy-900: #0a1226;
   --navy-800: #0f1b36;
-  --navy-700: #182b56;
+  --navy-700: #182b56; /* الكحلي الرسمي */
   --navy-600: #223a6b;
   --navy-500: #2e4a82;
-
-  --accent: #c3cfe6;
-  --accent-light: #e7edf8;
-  --accent-dark: #8fa0c0;
-  --accent-glow: rgba(195, 207, 230, 0.16);
-
-  --paper: #ffffff;
-  --cream: #f4f7fc;
-  --line: rgba(195, 207, 230, 0.15);
-  --line-solid: #dbe1ec;
-  --muted: #7c89a3;
-  --text: #edf1f8;
-  --text-dim: #aebad0;
 
   --success: #3fae87;
   --danger: #e0736b;
@@ -35,12 +22,136 @@
 
   --radius: 14px;
   --radius-sm: 9px;
+}
+
+/* ═══════════ الرؤية الليلية (الافتراضية) ═══════════ */
+:root,
+:root[data-theme='dark'] {
+  --bg: #0a1226;
+  --glow-1: rgba(46, 74, 130, 0.35);
+  --glow-2: rgba(34, 58, 107, 0.4);
+
+  --surface-1: rgba(30, 53, 96, 0.55);
+  --surface-2: rgba(15, 29, 56, 0.75);
+  --surface-solid-1: #0f1b36;
+  --surface-solid-2: #0a1226;
+  --surface-head: rgba(10, 20, 40, 0.75);
+  --surface-foot: rgba(10, 20, 40, 0.6);
+
+  --accent: #c3cfe6;
+  --accent-light: #e7edf8;
+  --accent-dark: #8fa0c0;
+  --accent-glow: rgba(195, 207, 230, 0.16);
+  --accent-soft: rgba(195, 207, 230, 0.13);
+
+  --text: #edf1f8;
+  --text-dim: #aebad0;
+  --muted: #7c89a3;
+  --heading: #ffffff;
+
+  --line: rgba(195, 207, 230, 0.15);
+  --line-row: rgba(255, 255, 255, 0.055);
+  --line-strong: rgba(195, 207, 230, 0.32);
+
+  --input-bg: rgba(10, 20, 40, 0.6);
+  --input-border: rgba(255, 255, 255, 0.11);
+  --option-bg: #0f1b36;
+
+  --hover: rgba(255, 255, 255, 0.05);
+  --hover-strong: rgba(255, 255, 255, 0.1);
+  --row-hover: rgba(255, 255, 255, 0.03);
+  --track: rgba(255, 255, 255, 0.08);
+
+  --btn-bg: rgba(255, 255, 255, 0.05);
+  --primary-from: #ffffff;
+  --primary-to: var(--accent);
+  --primary-fg: var(--navy-700);
+  --primary-border: var(--accent);
+
+  --avatar-from: var(--navy-500);
+  --avatar-to: var(--navy-700);
+  --chart-from: var(--accent-light);
+  --chart-to: var(--accent-dark);
+  --report-bd: #4a5568;
+
+  --backdrop: rgba(5, 10, 20, 0.72);
   --shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
   --shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.22);
 }
 
+/* ═══════════ الرؤية النهارية ═══════════ */
+:root[data-theme='light'] {
+  --bg: #eef2f9;
+  --glow-1: rgba(24, 43, 86, 0.07);
+  --glow-2: rgba(24, 43, 86, 0.05);
+
+  --surface-1: #ffffff;
+  --surface-2: #fdfefe;
+  --surface-solid-1: #ffffff;
+  --surface-solid-2: #f6f8fc;
+  --surface-head: var(--navy-700);
+  --surface-foot: #e9eef7;
+
+  /* على الورق الفاتح يجب أن يكون لون الإبراز داكناً ليُقرأ */
+  --accent: #2f4d86;
+  --accent-light: #182b56;
+  --accent-dark: #6a80ab;
+  --accent-glow: rgba(24, 43, 86, 0.14);
+  --accent-soft: rgba(24, 43, 86, 0.07);
+
+  --text: #1c2740;
+  --text-dim: #4a577a;
+  --muted: #71809e;
+  --heading: #182b56;
+
+  --line: #dbe1ec;
+  --line-row: #e7ebf3;
+  --line-strong: #c3cdde;
+
+  --input-bg: #ffffff;
+  --input-border: #cbd4e4;
+  --option-bg: #ffffff;
+
+  --hover: rgba(24, 43, 86, 0.05);
+  --hover-strong: rgba(24, 43, 86, 0.09);
+  --row-hover: rgba(24, 43, 86, 0.035);
+  --track: #dde4ef;
+
+  --btn-bg: #ffffff;
+  --primary-from: var(--navy-600);
+  --primary-to: var(--navy-700);
+  --primary-fg: #ffffff;
+  --primary-border: var(--navy-700);
+
+  --avatar-from: #e6ebf5;
+  --avatar-to: #d3dceb;
+  --chart-from: var(--navy-500);
+  --chart-to: var(--navy-700);
+  --report-bd: #b9c3d4;
+
+  --backdrop: rgba(24, 43, 86, 0.35);
+  --shadow: 0 18px 45px rgba(24, 43, 86, 0.18);
+  --shadow-sm: 0 3px 12px rgba(24, 43, 86, 0.08);
+}
+
 * {
   box-sizing: border-box;
+}
+
+/* انتقال ناعم عند تبديل الوضع (يُعطَّل لمن يفضّل تقليل الحركة) */
+@media (prefers-reduced-motion: no-preference) {
+  body,
+  .card,
+  .stat,
+  .sidebar,
+  .btn,
+  input,
+  select,
+  textarea,
+  thead th,
+  tfoot td {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
 }
 
 html,
@@ -52,7 +163,7 @@ body,
 body {
   margin: 0;
   font-family: var(--font-body);
-  background: var(--navy-900);
+  background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   font-size: 15px;
@@ -66,8 +177,8 @@ body::before {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(900px 500px at 85% -10%, rgba(46, 74, 130, 0.35), transparent 60%),
-    radial-gradient(700px 400px at 10% 110%, rgba(34, 58, 107, 0.4), transparent 60%);
+    radial-gradient(900px 500px at 85% -10%, var(--glow-1), transparent 60%),
+    radial-gradient(700px 400px at 10% 110%, var(--glow-2), transparent 60%);
   z-index: 0;
 }
 
@@ -82,7 +193,7 @@ h4 {
 }
 
 a {
-  color: var(--accent-light);
+  color: var(--accent);
   text-decoration: none;
 }
 
@@ -101,7 +212,7 @@ button {
 }
 
 .sidebar {
-  background: linear-gradient(180deg, var(--navy-800), var(--navy-900));
+  background: linear-gradient(180deg, var(--surface-solid-1), var(--surface-solid-2));
   border-inline-start: 1px solid var(--line);
   padding: 26px 18px;
   display: flex;
@@ -139,8 +250,8 @@ button {
   border-radius: 12px;
   display: grid;
   place-items: center;
-  background: linear-gradient(140deg, var(--accent), var(--accent-dark));
-  color: var(--navy-900);
+  background: linear-gradient(140deg, var(--navy-600), var(--navy-700));
+  color: #ffffff;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 20px;
@@ -158,14 +269,74 @@ button {
   font-family: var(--font-display);
   font-size: 18px;
   line-height: 1.2;
-  color: #fff;
+  color: var(--heading);
 }
 
 .brand-text span {
   display: block;
   font-size: 11.5px;
-  color: var(--accent);
+  color: var(--text-dim);
   letter-spacing: 0.03em;
+}
+
+/* صف الشعار مع زر تبديل الوضع */
+.brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.theme-toggle {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--btn-bg);
+  color: var(--accent);
+  transition: all 0.16s ease;
+}
+
+.theme-toggle:hover {
+  background: var(--hover-strong);
+  border-color: var(--line-strong);
+  color: var(--heading);
+}
+
+/* اختيار الوضع من صفحة الإعدادات */
+.theme-choice {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.theme-choice button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--btn-bg);
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.theme-choice button:hover {
+  background: var(--hover-strong);
+}
+
+.theme-choice button.active {
+  border-color: var(--line-strong);
+  background: var(--accent-soft);
+  color: var(--heading);
+  font-weight: 600;
 }
 
 .nav {
@@ -198,14 +369,14 @@ button {
 }
 
 .nav button:hover {
-  background: rgba(255, 255, 255, 0.04);
-  color: #fff;
+  background: var(--hover);
+  color: var(--heading);
 }
 
 .nav button.active {
-  background: linear-gradient(90deg, rgba(195, 207, 230, 0.14), rgba(195, 207, 230, 0.02));
-  border-color: rgba(195, 207, 230, 0.32);
-  color: #fff;
+  background: linear-gradient(90deg, var(--accent-soft), transparent);
+  border-color: var(--line-strong);
+  color: var(--heading);
 }
 
 .nav button.active .nav-icon {
@@ -248,7 +419,7 @@ button {
 
 .page-head h1 {
   font-size: 30px;
-  color: #fff;
+  color: var(--heading);
 }
 
 .page-head p {
@@ -266,7 +437,7 @@ button {
 /* ─────────────────── العناصر ─────────────────── */
 
 .card {
-  background: linear-gradient(160deg, rgba(30, 53, 96, 0.55), rgba(15, 29, 56, 0.75));
+  background: linear-gradient(160deg, var(--surface-1), var(--surface-2));
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 22px;
@@ -276,7 +447,7 @@ button {
 .card-title {
   font-family: var(--font-display);
   font-size: 19px;
-  color: #fff;
+  color: var(--heading);
   margin-bottom: 4px;
 }
 
@@ -370,7 +541,7 @@ button {
 .stat {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(160deg, rgba(30, 53, 96, 0.6), rgba(15, 29, 56, 0.8));
+  background: linear-gradient(160deg, var(--surface-1), var(--surface-2));
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 20px 22px;
@@ -398,7 +569,7 @@ button {
 .stat-value {
   font-family: var(--font-display);
   font-size: 27px;
-  color: #fff;
+  color: var(--heading);
   margin-top: 8px;
   line-height: 1.25;
   direction: ltr;
@@ -407,7 +578,7 @@ button {
 }
 
 .stat-value.accent {
-  color: var(--accent-light);
+  color: var(--accent);
 }
 
 .stat-foot {
@@ -425,7 +596,7 @@ button {
   padding: 10px 18px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--btn-bg);
   color: var(--text);
   font-size: 14px;
   cursor: pointer;
@@ -434,8 +605,8 @@ button {
 }
 
 .btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(195, 207, 230, 0.38);
+  background: var(--hover-strong);
+  border-color: var(--line-strong);
 }
 
 .btn:disabled {
@@ -444,25 +615,25 @@ button {
 }
 
 .btn-primary {
-  background: linear-gradient(140deg, #ffffff, var(--accent));
-  border-color: var(--accent);
-  color: var(--navy-700);
+  background: linear-gradient(140deg, var(--primary-from), var(--primary-to));
+  border-color: var(--primary-border);
+  color: var(--primary-fg);
   font-weight: 600;
   box-shadow: 0 6px 18px var(--accent-glow);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(140deg, #ffffff, var(--accent-light));
-  border-color: #fff;
+  filter: brightness(1.08);
+  border-color: var(--primary-border);
 }
 
 .btn-danger {
   color: var(--danger);
-  border-color: rgba(217, 99, 92, 0.35);
+  border-color: rgba(224, 115, 107, 0.4);
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: rgba(217, 99, 92, 0.14);
+  background: rgba(224, 115, 107, 0.14);
   border-color: var(--danger);
 }
 
@@ -499,8 +670,8 @@ textarea {
   width: 100%;
   padding: 10px 13px;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  background: rgba(10, 20, 40, 0.6);
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
   color: var(--text);
   font-family: inherit;
   font-size: 14.5px;
@@ -524,11 +695,11 @@ input[type='date'],
 input[type='month'] {
   direction: ltr;
   text-align: end;
-  color-scheme: dark;
 }
 
 select option {
-  background: var(--navy-800);
+  background: var(--option-bg);
+  color: var(--text);
 }
 
 textarea {
@@ -551,8 +722,8 @@ table {
 }
 
 thead th {
-  background: rgba(10, 20, 40, 0.75);
-  color: var(--accent-light);
+  background: var(--surface-head);
+  color: #ffffff;
   font-weight: 600;
   font-size: 12.5px;
   letter-spacing: 0.04em;
@@ -564,7 +735,7 @@ thead th {
 
 tbody td {
   padding: 13px 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+  border-bottom: 1px solid var(--line-row);
   color: var(--text);
   vertical-align: middle;
 }
@@ -574,7 +745,7 @@ tbody tr:last-child td {
 }
 
 tbody tr:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--row-hover);
 }
 
 .num {
@@ -587,10 +758,10 @@ tbody tr:hover {
 
 tfoot td {
   padding: 13px 15px;
-  background: rgba(10, 20, 40, 0.6);
+  background: var(--surface-foot);
   border-top: 1px solid var(--line);
   font-weight: 600;
-  color: var(--accent-light);
+  color: var(--accent);
 }
 
 /* الشارات */
@@ -606,27 +777,27 @@ tfoot td {
 }
 
 .badge-success {
-  background: rgba(52, 163, 122, 0.15);
+  background: rgba(63, 174, 135, 0.14);
   color: var(--success);
   border-color: rgba(52, 163, 122, 0.3);
 }
 
 .badge-warn {
-  background: rgba(217, 164, 65, 0.14);
+  background: rgba(221, 160, 90, 0.15);
   color: var(--warn);
-  border-color: rgba(217, 164, 65, 0.3);
+  border-color: rgba(221, 160, 90, 0.35);
 }
 
 .badge-muted {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--hover);
   color: var(--muted);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--line);
 }
 
 .badge-accent {
-  background: rgba(195, 207, 230, 0.13);
+  background: var(--accent-soft);
   color: var(--accent);
-  border-color: rgba(195, 207, 230, 0.3);
+  border-color: var(--line-strong);
 }
 
 /* الأفاتار */
@@ -637,8 +808,8 @@ tfoot td {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: linear-gradient(140deg, var(--navy-500), var(--navy-700));
-  border: 1px solid rgba(195, 207, 230, 0.32);
+  background: linear-gradient(140deg, var(--avatar-from), var(--avatar-to));
+  border: 1px solid var(--line-strong);
   color: var(--accent);
   font-weight: 600;
   font-size: 14px;
@@ -653,7 +824,7 @@ tfoot td {
 
 .person-name {
   font-weight: 500;
-  color: #fff;
+  color: var(--heading);
   white-space: nowrap;
 }
 
@@ -676,7 +847,7 @@ tfoot td {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  border: 1px dashed rgba(195, 207, 230, 0.38);
+  border: 1px dashed var(--line-strong);
   color: var(--accent);
 }
 
@@ -690,7 +861,7 @@ tfoot td {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(5, 10, 20, 0.72);
+  background: var(--backdrop);
   backdrop-filter: blur(4px);
   display: grid;
   place-items: center;
@@ -702,8 +873,8 @@ tfoot td {
   width: min(660px, 100%);
   max-height: 90vh;
   overflow-y: auto;
-  background: linear-gradient(160deg, var(--navy-700), var(--navy-900));
-  border: 1px solid rgba(195, 207, 230, 0.26);
+  background: linear-gradient(160deg, var(--surface-solid-1), var(--surface-solid-2));
+  border: 1px solid var(--line-strong);
   border-radius: 18px;
   box-shadow: var(--shadow);
   padding: 26px;
@@ -721,7 +892,7 @@ tfoot td {
 
 .modal-head h2 {
   font-size: 22px;
-  color: #fff;
+  color: var(--heading);
 }
 
 .modal-foot {
@@ -745,15 +916,15 @@ tfoot td {
 }
 
 .icon-btn:hover {
-  background: rgba(255, 255, 255, 0.07);
-  color: #fff;
+  background: var(--hover-strong);
+  color: var(--heading);
 }
 
 /* شريط تقدّم بسيط */
 .bar {
   height: 7px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--track);
   overflow: hidden;
 }
 
@@ -761,7 +932,7 @@ tfoot td {
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+  background: linear-gradient(90deg, var(--chart-to), var(--chart-from));
 }
 
 /* رسم بياني بسيط للأعمدة */
@@ -788,7 +959,7 @@ tfoot td {
   width: 100%;
   max-width: 44px;
   border-radius: 6px 6px 0 0;
-  background: linear-gradient(180deg, var(--accent-light), var(--accent-dark));
+  background: linear-gradient(180deg, var(--chart-from), var(--chart-to));
   min-height: 3px;
   transition: height 0.3s ease;
 }
@@ -804,7 +975,7 @@ tfoot td {
 
 .chart-value {
   font-size: 11px;
-  color: var(--accent-light);
+  color: var(--accent);
   direction: ltr;
   font-variant-numeric: tabular-nums;
 }
@@ -831,7 +1002,7 @@ tfoot td {
 }
 
 .accent {
-  color: var(--accent-light);
+  color: var(--accent);
 }
 
 .pos {

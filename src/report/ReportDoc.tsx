@@ -49,7 +49,7 @@ export function ReportDoc({ report, settings }: { report: PeriodReport; settings
               </>
             ) : (
               <div>
-                <Wordmark className="doc-logo-wordmark" />
+                <Wordmark variant="light" className="doc-logo-wordmark" />
                 {s.tagline && <div className="doc-tagline">{s.tagline}</div>}
               </div>
             )}

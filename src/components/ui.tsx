@@ -1,7 +1,8 @@
 /** مكوّنات واجهة مشتركة */
 
 import { useEffect, type ReactNode } from 'react'
-import { IconClose } from './Icons'
+import { IconClose, IconMoon, IconSun } from './Icons'
+import { useTheme } from '../theme/theme'
 import logoLight from '../assets/logo-light.png'
 import logoDark from '../assets/logo-dark.png'
 
@@ -128,19 +129,41 @@ export function LogoMark({
 /**
  * الشعار العريض الرسمي (wordmark).
  * النسخة البيضاء للخلفيات الكحلية، والكحلية للخلفيات الفاتحة.
+ *
+ * بدون تحديد `variant` يختار النسخة المناسبة تلقائياً حسب وضع
+ * العرض (نهاري/ليلي). التقارير تمرّر `variant="light"` صراحةً
+ * لأن ترويسة المستند كحلية دائماً.
  */
 export function Wordmark({
-  variant = 'light',
+  variant,
   className,
 }: {
   variant?: 'light' | 'dark'
   className?: string
 }) {
+  const { theme } = useTheme()
+  const resolved = variant ?? (theme === 'light' ? 'dark' : 'light')
   return (
     <img
-      src={variant === 'light' ? logoLight : logoDark}
+      src={resolved === 'light' ? logoLight : logoDark}
       alt="CALL & RENT"
       className={className}
     />
+  )
+}
+
+/** زر تبديل الرؤية النهارية/الليلية */
+export function ThemeToggle() {
+  const { theme, toggle } = useTheme()
+  const next = theme === 'dark' ? 'الرؤية النهارية' : 'الرؤية الليلية'
+  return (
+    <button
+      className="theme-toggle"
+      onClick={toggle}
+      title={`التبديل إلى ${next}`}
+      aria-label={`التبديل إلى ${next}`}
+    >
+      {theme === 'dark' ? <IconSun /> : <IconMoon />}
+    </button>
   )
 }
