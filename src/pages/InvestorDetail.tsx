@@ -150,7 +150,7 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
             تسجيل ربح شهر
           </button>
           <button
-            className="btn btn-gold"
+            className="btn btn-primary"
             onClick={() => go({ name: 'reports', investorId: id })}
           >
             <IconDoc className="btn-icon" />
@@ -165,7 +165,7 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
           value={money(summary.currentCapital, sym)}
           foot={`إجمالي المودع ${money(summary.totalDeposited, sym)}`}
           icon={<IconWallet size={16} />}
-          gold
+          highlight
         />
         <Stat
           label="إجمالي الأرباح"
@@ -234,7 +234,7 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
                     <tr key={p.id}>
                       <td>{monthLabel(p.month)}</td>
                       <td className="num">{money(cap, sym)}</td>
-                      <td className="num gold">{money(p.amount, sym)}</td>
+                      <td className="num accent">{money(p.amount, sym)}</td>
                       <td className="num pos">{percent(pct)}</td>
                       <td>
                         <button
@@ -317,7 +317,7 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
                     <td>{dateLabel(c.date)}</td>
                     <td>
                       <span
-                        className={c.type === 'deposit' ? 'badge badge-gold' : 'badge badge-muted'}
+                        className={c.type === 'deposit' ? 'badge badge-accent' : 'badge badge-muted'}
                       >
                         {c.type === 'deposit' ? 'إيداع استثماري' : 'سحب من رأس المال'}
                       </span>
@@ -360,7 +360,7 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
           onClose={() => setCapOpen(false)}
           footer={
             <>
-              <button className="btn btn-gold" onClick={saveCapital}>
+              <button className="btn btn-primary" onClick={saveCapital}>
                 حفظ الحركة
               </button>
               <button className="btn" onClick={() => setCapOpen(false)}>
@@ -416,7 +416,7 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
           onClose={() => setProfitOpen(false)}
           footer={
             <>
-              <button className="btn btn-gold" onClick={saveProfit}>
+              <button className="btn btn-primary" onClick={saveProfit}>
                 حفظ الربح
               </button>
               <button className="btn" onClick={() => setProfitOpen(false)}>

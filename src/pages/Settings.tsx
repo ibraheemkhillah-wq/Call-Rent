@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useStore } from '../store'
-import { Field } from '../components/ui'
+import { Field, Wordmark } from '../components/ui'
 import { IconDownload, IconTrash, IconUpload } from '../components/Icons'
 
 export function SettingsPage() {
@@ -68,30 +68,37 @@ export function SettingsPage() {
         <div className="card-title">هوية الشركة</div>
         <div className="card-sub">تظهر في الشريط الجانبي وفي ترويسة كل تقرير</div>
 
-        <div className="row" style={{ marginBottom: 20, gap: 18 }}>
-          <div
-            className="brand-mark"
-            style={{ width: 76, height: 76, borderRadius: 16, fontSize: 26 }}
-          >
-            {s.logoDataUrl ? <img src={s.logoDataUrl} alt="الشعار" /> : 'شعار'}
-          </div>
+        <div className="row" style={{ marginBottom: 20, gap: 22 }}>
+          {s.logoDataUrl ? (
+            <div
+              className="brand-mark"
+              style={{ width: 76, height: 76, borderRadius: 16, fontSize: 26 }}
+            >
+              <img src={s.logoDataUrl} alt="الشعار" />
+            </div>
+          ) : (
+            <Wordmark className="brand-logo" />
+          )}
           <div>
             <div className="row">
               <button className="btn btn-sm" onClick={() => logoRef.current?.click()}>
                 <IconUpload className="btn-icon" />
-                رفع الشعار
+                {s.logoDataUrl ? 'استبدال الشعار' : 'رفع شعار مخصّص'}
               </button>
               {s.logoDataUrl && (
                 <button
                   className="btn btn-sm btn-danger"
                   onClick={() => updateSettings({ logoDataUrl: '' })}
                 >
-                  إزالة
+                  العودة للشعار الرسمي
                 </button>
               )}
             </div>
             <p className="hint" style={{ marginTop: 8 }}>
-              يُفضّل PNG أو SVG بخلفية شفافة، حتى 1 ميغابايت.
+              {s.logoDataUrl
+                ? 'يُستخدم هذا الشعار بدل الشعار الرسمي المدمج في التطبيق.'
+                : 'الشعار الرسمي CALL & RENT مدمج في التطبيق ويظهر تلقائياً — الرفع اختياري.'}{' '}
+              يُفضّل PNG بخلفية شفافة، حتى 1 ميغابايت.
             </p>
             <input
               ref={logoRef}
@@ -116,7 +123,7 @@ export function SettingsPage() {
               onChange={(e) => updateSettings({ companyName: e.target.value })}
             />
           </Field>
-          <Field label="السطر التعريفي" hint="يظهر أسفل اسم الشركة">
+          <Field label="السطر التعريفي" hint="يظهر أسفل الشعار في التطبيق والتقارير">
             <input
               value={s.tagline}
               onChange={(e) => updateSettings({ tagline: e.target.value })}
@@ -183,7 +190,7 @@ export function SettingsPage() {
         </div>
 
         <div className="row">
-          <button className="btn btn-gold" onClick={exportJson}>
+          <button className="btn btn-primary" onClick={exportJson}>
             <IconDownload className="btn-icon" />
             تصدير نسخة احتياطية
           </button>

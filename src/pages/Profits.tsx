@@ -80,7 +80,7 @@ export function Profits({ go }: { go: (r: Route) => void }) {
             title="لا يوجد مستثمرون نشطون"
             text="أضف مستثمرين أولاً لتتمكن من تسجيل الأرباح الشهرية."
             action={
-              <button className="btn btn-gold" onClick={() => go({ name: 'investors' })}>
+              <button className="btn btn-primary" onClick={() => go({ name: 'investors' })}>
                 إضافة مستثمر
               </button>
             }
@@ -98,7 +98,7 @@ export function Profits({ go }: { go: (r: Route) => void }) {
           <p>سجّل ربح كل مستثمر لشهر {monthLabel(month)} — والنسب تُحتسب تلقائياً</p>
         </div>
         <div className="head-actions">
-          <button className="btn btn-gold" onClick={save}>
+          <button className="btn btn-primary" onClick={save}>
             {saved ? (
               <>
                 <IconCheck className="btn-icon" /> تم الحفظ
@@ -217,7 +217,7 @@ export function Profits({ go }: { go: (r: Route) => void }) {
         </div>
 
         <div className="row" style={{ marginTop: 18 }}>
-          <button className="btn btn-gold" onClick={save}>
+          <button className="btn btn-primary" onClick={save}>
             {saved ? (
               <>
                 <IconCheck className="btn-icon" /> تم الحفظ

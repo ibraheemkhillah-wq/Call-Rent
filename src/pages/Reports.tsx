@@ -82,7 +82,7 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
           <p>اختر المستثمر ونوع الفترة ثم صدّر التقرير بصيغة PDF</p>
         </div>
         <div className="head-actions">
-          <button className="btn btn-gold" onClick={() => window.print()}>
+          <button className="btn btn-primary" onClick={() => window.print()}>
             <IconPrint className="btn-icon" />
             تصدير PDF / طباعة
           </button>
@@ -135,7 +135,7 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
           )}
 
           <div className="spacer" />
-          <button className="btn btn-gold" onClick={() => window.print()}>
+          <button className="btn btn-primary" onClick={() => window.print()}>
             <IconPrint className="btn-icon" />
             تصدير PDF
           </button>
@@ -143,7 +143,7 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
 
         <div className="divider" />
         <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-          <strong className="gold">طريقة الحفظ كـ PDF:</strong> اضغط «تصدير PDF»، ثم من نافذة
+          <strong className="accent">طريقة الحفظ كـ PDF:</strong> اضغط «تصدير PDF»، ثم من نافذة
           الطباعة اختر الوجهة <strong>«حفظ كـ PDF» / Save as PDF</strong>، واضبط الهوامش على
           «بلا / None» وفعّل خيار <strong>«طباعة الخلفيات» / Background graphics</strong> للحصول
           على التصميم كاملاً.

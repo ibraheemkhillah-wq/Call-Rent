@@ -106,7 +106,7 @@ export function Investors({ go }: { go: (r: Route) => void }) {
           <p>إدارة بيانات المستثمرين ورؤوس أموالهم</p>
         </div>
         <div className="head-actions">
-          <button className="btn btn-gold" onClick={openNew}>
+          <button className="btn btn-primary" onClick={openNew}>
             <IconPlus className="btn-icon" />
             إضافة مستثمر
           </button>
@@ -138,7 +138,7 @@ export function Investors({ go }: { go: (r: Route) => void }) {
             }
             action={
               !query && (
-                <button className="btn btn-gold" onClick={openNew}>
+                <button className="btn btn-primary" onClick={openNew}>
                   <IconPlus className="btn-icon" />
                   إضافة مستثمر
                 </button>
@@ -180,7 +180,7 @@ export function Investors({ go }: { go: (r: Route) => void }) {
                     </td>
                     <td>{dateLabel(s.investor.joinDate)}</td>
                     <td className="num">{money(s.totalDeposited, sym)}</td>
-                    <td className="num gold">{money(s.currentCapital, sym)}</td>
+                    <td className="num accent">{money(s.currentCapital, sym)}</td>
                     <td className="num">{money(s.totalProfit, sym)}</td>
                     <td className="num pos">{percent(s.lifetimeReturnPct)}</td>
                     <td>
@@ -226,7 +226,7 @@ export function Investors({ go }: { go: (r: Route) => void }) {
           onClose={() => setOpen(false)}
           footer={
             <>
-              <button className="btn btn-gold" onClick={save}>
+              <button className="btn btn-primary" onClick={save}>
                 {editing ? 'حفظ التعديلات' : 'إضافة المستثمر'}
               </button>
               <button className="btn" onClick={() => setOpen(false)}>

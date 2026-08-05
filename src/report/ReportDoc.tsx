@@ -3,8 +3,9 @@
 import type { PeriodReport } from '../lib/calc'
 import { PERIOD_NAMES, annualizeFactor } from '../lib/calc'
 import type { Settings } from '../types'
-import { dateLabel, initials, money, monthLabel, percent, todayIso } from '../lib/format'
+import { dateLabel, money, monthLabel, percent, todayIso } from '../lib/format'
 import { usePageSnap } from './usePageSnap'
+import { Wordmark } from '../components/ui'
 
 function serial(r: PeriodReport): string {
   const code =
@@ -36,17 +37,22 @@ export function ReportDoc({ report, settings }: { report: PeriodReport; settings
       <header className="doc-header">
         <div className="doc-header-top">
           <div className="doc-brand">
-            <div className="doc-logo">
-              {s.logoDataUrl ? (
-                <img src={s.logoDataUrl} alt="شعار الشركة" />
-              ) : (
-                initials(company)
-              )}
-            </div>
-            <div>
-              <div className="doc-company">{company}</div>
-              {s.tagline && <div className="doc-tagline">{s.tagline}</div>}
-            </div>
+            {s.logoDataUrl ? (
+              <>
+                <div className="doc-logo">
+                  <img src={s.logoDataUrl} alt="شعار الشركة" />
+                </div>
+                <div>
+                  <div className="doc-company">{company}</div>
+                  {s.tagline && <div className="doc-tagline">{s.tagline}</div>}
+                </div>
+              </>
+            ) : (
+              <div>
+                <Wordmark className="doc-logo-wordmark" />
+                {s.tagline && <div className="doc-tagline">{s.tagline}</div>}
+              </div>
+            )}
           </div>
           <div className="doc-meta">
             <div>
@@ -180,8 +186,8 @@ export function ReportDoc({ report, settings }: { report: PeriodReport; settings
               <tr>
                 <td>الإجمالي — {report.label}</td>
                 <td className="num">{money(report.averageCapital, '')}</td>
-                <td className="num gold">{money(report.totalProfit, '')}</td>
-                <td className="num gold">{percent(report.returnPct)}</td>
+                <td className="num accent">{money(report.totalProfit, '')}</td>
+                <td className="num accent">{percent(report.returnPct)}</td>
                 <td>{monthsWithData.length} شهر مسجّل</td>
               </tr>
             </tfoot>
@@ -246,9 +252,9 @@ export function ReportDoc({ report, settings }: { report: PeriodReport; settings
               <tfoot>
                 <tr>
                   <td>رأس المال في بداية الفترة</td>
-                  <td className="num gold">{money(report.openingCapital, sym)}</td>
+                  <td className="num accent">{money(report.openingCapital, sym)}</td>
                   <td>رأس المال في نهاية الفترة</td>
-                  <td className="num gold">{money(report.closingCapital, sym)}</td>
+                  <td className="num accent">{money(report.closingCapital, sym)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -299,9 +305,9 @@ export function ReportDoc({ report, settings }: { report: PeriodReport; settings
             <tfoot>
               <tr>
                 <td>العائد التراكمي على رأس المال القائم</td>
-                <td className="num gold">{percent(report.lifetime.lifetimeReturnPct)}</td>
+                <td className="num accent">{percent(report.lifetime.lifetimeReturnPct)}</td>
                 <td>القيمة الإجمالية (رأس المال + الأرباح المستحقة)</td>
-                <td className="num gold">
+                <td className="num accent">
                   {money(
                     report.lifetime.currentCapital + report.lifetime.unpaidProfit,
                     sym,

@@ -26,7 +26,8 @@ const DB_VERSION = 1
 export const defaultSettings: Settings = {
   companyName: brand.name,
   companyNameAr: brand.nameAr,
-  tagline: brand.tagline,
+  /** السطر العربي الظاهر تحت الشعار — الشعار نفسه يحمل الاسم والسطر الإنجليزي */
+  tagline: brand.systemName,
   logoDataUrl: '',
   currency: 'USD',
   currencySymbol: '$',

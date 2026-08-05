@@ -2,6 +2,8 @@
 
 import { useEffect, type ReactNode } from 'react'
 import { IconClose } from './Icons'
+import logoLight from '../assets/logo-light.png'
+import logoDark from '../assets/logo-dark.png'
 
 export function Modal({
   title,
@@ -65,13 +67,13 @@ export function Stat({
   value,
   foot,
   icon,
-  gold,
+  highlight,
 }: {
   label: string
   value: string
   foot?: string
   icon?: ReactNode
-  gold?: boolean
+  highlight?: boolean
 }) {
   return (
     <div className="stat">
@@ -79,7 +81,7 @@ export function Stat({
         {icon}
         {label}
       </div>
-      <div className={gold ? 'stat-value gold' : 'stat-value'}>{value}</div>
+      <div className={highlight ? 'stat-value accent' : 'stat-value'}>{value}</div>
       {foot && <div className="stat-foot">{foot}</div>}
     </div>
   )
@@ -120,5 +122,25 @@ export function LogoMark({
     <div className={className}>
       {logoDataUrl ? <img src={logoDataUrl} alt="شعار الشركة" /> : fallback}
     </div>
+  )
+}
+
+/**
+ * الشعار العريض الرسمي (wordmark).
+ * النسخة البيضاء للخلفيات الكحلية، والكحلية للخلفيات الفاتحة.
+ */
+export function Wordmark({
+  variant = 'light',
+  className,
+}: {
+  variant?: 'light' | 'dark'
+  className?: string
+}) {
+  return (
+    <img
+      src={variant === 'light' ? logoLight : logoDark}
+      alt="CALL & RENT"
+      className={className}
+    />
   )
 }

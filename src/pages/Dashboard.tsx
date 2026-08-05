@@ -47,7 +47,7 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
             title="لنبدأ بإضافة أول مستثمر"
             text="أضف المستثمرين ومبالغ استثماراتهم، ثم سجّل الأرباح الشهرية، وسيتولى النظام إعداد التقارير."
             action={
-              <button className="btn btn-gold" onClick={() => go({ name: 'investors' })}>
+              <button className="btn btn-primary" onClick={() => go({ name: 'investors' })}>
                 <IconPlus className="btn-icon" />
                 إضافة مستثمر
               </button>
@@ -69,7 +69,7 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
           <button className="btn" onClick={() => go({ name: 'profits' })}>
             تسجيل أرباح الشهر
           </button>
-          <button className="btn btn-gold" onClick={() => go({ name: 'reports' })}>
+          <button className="btn btn-primary" onClick={() => go({ name: 'reports' })}>
             إصدار تقرير
           </button>
         </div>
@@ -81,7 +81,7 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
           value={money(stats.totalCapital, sym)}
           foot={`موزّع على ${count(stats.activeCount)} مستثمر نشط`}
           icon={<IconWallet size={16} />}
-          gold
+          highlight
         />
         <Stat
           label="إجمالي الأرباح الموزّعة"
@@ -140,7 +140,7 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
                     <span>{s.investor.name}</span>
                     <span className="spacer" />
                     <span className="num muted">{money(s.currentCapital, sym)}</span>
-                    <span className="num gold">{percent(share, 1)}</span>
+                    <span className="num accent">{percent(share, 1)}</span>
                   </div>
                   <div className="bar">
                     <span style={{ width: `${Math.min(share, 100)}%` }} />
@@ -184,7 +184,7 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
                     </div>
                   </td>
                   <td className="num">{money(s.currentCapital, sym)}</td>
-                  <td className="num gold">{money(s.totalProfit, sym)}</td>
+                  <td className="num accent">{money(s.totalProfit, sym)}</td>
                   <td className="num pos">{percent(s.lifetimeReturnPct)}</td>
                   <td className="num">{percent(s.avgMonthlyPct)}</td>
                   <td className="num">

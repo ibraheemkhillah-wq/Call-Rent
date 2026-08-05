@@ -10,14 +10,16 @@
 }
 
 .doc {
-  --d-navy: #0a1428;
-  --d-navy-soft: #16294b;
-  --d-gold: #b8901f;
-  --d-gold-light: #d9b551;
-  --d-ink: #1a2233;
-  --d-muted: #6b7280;
-  --d-line: #ded7c6;
-  --d-cream: #faf7f0;
+  /* ◆ الكحلي الرسمي من الشعار */
+  --d-navy: #182b56;
+  --d-navy-soft: #223a6b;
+  /* أزرق فولاذي للإبراز فوق الورق الأبيض */
+  --d-accent: #3e5c99;
+  --d-accent-light: #9fb2d8;
+  --d-ink: #16203a;
+  --d-muted: #6b7690;
+  --d-line: #dbe1ec;
+  --d-cream: #f4f7fc;
 
   width: 210mm;
   min-height: 297mm;
@@ -42,7 +44,7 @@
 .doc-header {
   background: linear-gradient(135deg, var(--d-navy) 0%, var(--d-navy-soft) 100%);
   color: #fff;
-  padding: 15mm 15mm 10mm;
+  padding: 12mm 15mm 9mm;
   position: relative;
   overflow: hidden;
 }
@@ -55,9 +57,9 @@
   height: 4px;
   background: linear-gradient(
     90deg,
-    var(--d-gold) 0%,
-    var(--d-gold-light) 50%,
-    var(--d-gold) 100%
+    var(--d-accent-light) 0%,
+    #ffffff 50%,
+    var(--d-accent-light) 100%
   );
 }
 
@@ -70,8 +72,8 @@
   width: 300px;
   height: 300px;
   border-radius: 50%;
-  border: 1px solid rgba(217, 181, 81, 0.16);
-  box-shadow: inset 0 0 0 28px rgba(217, 181, 81, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 0 28px rgba(255, 255, 255, 0.04);
 }
 
 .doc-header-top {
@@ -89,6 +91,14 @@
   gap: 12px;
 }
 
+/* الشعار العريض في ترويسة التقرير */
+.doc-logo-wordmark {
+  width: 45mm;
+  height: auto;
+  display: block;
+}
+
+/* بديل مربّع حين يرفع المستخدم شعاراً مخصصاً أو لا يوجد شعار */
 .doc-logo {
   width: 54px;
   height: 54px;
@@ -96,7 +106,7 @@
   border-radius: 11px;
   display: grid;
   place-items: center;
-  background: linear-gradient(140deg, var(--d-gold-light), var(--d-gold));
+  background: #ffffff;
   color: var(--d-navy);
   font-family: 'Amiri', serif;
   font-size: 22px;
@@ -118,8 +128,8 @@
 }
 
 .doc-tagline {
-  font-size: 9pt;
-  color: var(--d-gold-light);
+  font-size: 8.5pt;
+  color: rgba(255, 255, 255, 0.72);
   letter-spacing: 0.06em;
 }
 
@@ -131,12 +141,12 @@
 }
 
 .doc-meta b {
-  color: var(--d-gold-light);
+  color: #ffffff;
   font-weight: 500;
 }
 
 .doc-title-block {
-  margin-top: 7mm;
+  margin-top: 5mm;
   position: relative;
   z-index: 1;
 }
@@ -144,13 +154,13 @@
 .doc-kicker {
   font-size: 8.5pt;
   letter-spacing: 0.3em;
-  color: var(--d-gold-light);
+  color: var(--d-accent-light);
   margin-bottom: 4px;
 }
 
 .doc-title {
   font-family: 'Amiri', serif;
-  font-size: 27pt;
+  font-size: 24pt;
   font-weight: 700;
   line-height: 1.15;
 }
@@ -179,7 +189,7 @@
   color: var(--d-navy);
   padding-bottom: 4px;
   margin-bottom: 8px;
-  border-bottom: 2px solid var(--d-gold);
+  border-bottom: 2px solid var(--d-accent);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -200,7 +210,7 @@
   gap: 0 22px;
   background: var(--d-cream);
   border: 1px solid var(--d-line);
-  border-inline-start: 4px solid var(--d-gold);
+  border-inline-start: 4px solid var(--d-accent);
   border-radius: 8px;
   padding: 9px 16px;
 }
@@ -251,7 +261,7 @@
   inset-inline-start: 0;
   width: 100%;
   height: 3px;
-  background: linear-gradient(90deg, var(--d-gold), var(--d-gold-light));
+  background: linear-gradient(90deg, var(--d-navy), var(--d-accent-light));
 }
 
 .doc-hl.feature {
@@ -268,7 +278,8 @@
 }
 
 .doc-hl.feature .hl-label {
-  color: var(--d-gold-light);
+  color: var(--d-accent-light);
+  font-weight: 500;
 }
 
 .doc-hl .hl-value {
@@ -306,7 +317,7 @@
 
 .doc thead th {
   background: var(--d-navy);
-  color: var(--d-gold-light);
+  color: #ffffff;
   font-weight: 600;
   font-size: 9pt;
   text-align: start;
@@ -355,8 +366,9 @@
   border: none;
 }
 
-.doc tfoot td.gold {
-  color: var(--d-gold-light);
+.doc tfoot td.accent {
+  color: #ffffff;
+  font-weight: 700;
 }
 
 .doc .num {
@@ -382,9 +394,9 @@
 }
 
 .doc .tag-due {
-  color: #a8761c;
-  border-color: #e3cd97;
-  background: #fdf6e6;
+  color: #9a6f1f;
+  border-color: #e2cd9d;
+  background: #fbf5e8;
 }
 
 .doc .tag-none {
@@ -420,7 +432,7 @@
   width: 100%;
   max-width: 34px;
   border-radius: 4px 4px 0 0;
-  background: linear-gradient(180deg, var(--d-gold-light), var(--d-gold));
+  background: linear-gradient(180deg, var(--d-navy-soft), var(--d-navy));
   min-height: 2px;
 }
 
@@ -441,7 +453,7 @@
 .doc-note {
   background: var(--d-cream);
   border: 1px solid var(--d-line);
-  border-inline-start: 3px solid var(--d-gold);
+  border-inline-start: 3px solid var(--d-accent);
   border-radius: 6px;
   padding: 9px 13px;
   font-size: 8.5pt;
@@ -487,12 +499,12 @@
 .doc-stamp {
   width: 30mm;
   height: 30mm;
-  border: 2px solid var(--d-gold);
+  border: 2px solid var(--d-accent);
   border-radius: 50%;
   display: grid;
   place-items: center;
   text-align: center;
-  color: var(--d-gold);
+  color: var(--d-navy);
   font-family: 'Amiri', serif;
   font-size: 8pt;
   line-height: 1.4;
@@ -503,7 +515,7 @@
 /* التذييل */
 .doc-footer {
   margin-top: auto;
-  border-top: 3px solid var(--d-gold);
+  border-top: 3px solid var(--d-accent);
   background: var(--d-navy);
   color: rgba(255, 255, 255, 0.72);
   padding: 6mm 16mm;
@@ -516,8 +528,8 @@
 }
 
 .doc-footer b {
-  color: var(--d-gold-light);
-  font-weight: 500;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .doc-confid {
