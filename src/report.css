@@ -7,6 +7,9 @@
   padding: 30px 16px 60px;
   min-height: 100vh;
   overflow-y: auto;
+  /* عرض المستند ثابت (A4)؛ على الشاشات الضيقة يُمرَّر داخل حاويته
+     حتى لا تتحرك الصفحة كلها أفقياً */
+  overflow-x: auto;
 }
 
 .doc {

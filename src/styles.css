@@ -111,6 +111,8 @@ button {
   top: 0;
   height: 100vh;
   overflow-y: auto;
+  padding-top: calc(26px + env(safe-area-inset-top));
+  padding-bottom: calc(26px + env(safe-area-inset-bottom));
 }
 
 .brand {
@@ -228,6 +230,8 @@ button {
 
 .main {
   padding: 30px 34px 60px;
+  padding-inline-end: calc(34px + env(safe-area-inset-right));
+  padding-inline-start: calc(34px + env(safe-area-inset-left));
   min-width: 0;
 }
 
@@ -312,14 +316,53 @@ button {
   .sidebar {
     position: static;
     height: auto;
+    padding-bottom: 18px;
   }
-  .grid-4,
+  /* على الجوال: القائمة أفقية قابلة للتمرير بدل عمود طويل */
+  .nav {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 6px;
+    padding-bottom: 4px;
+  }
+  .nav button {
+    white-space: nowrap;
+    width: auto;
+  }
+  .nav-label,
+  .sidebar-foot {
+    display: none;
+  }
+  .brand {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand-logo {
+    max-width: 150px;
+  }
   .grid-3,
   .grid-2 {
     grid-template-columns: 1fr;
   }
+  .grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .stat {
+    padding: 15px 16px;
+  }
+  .stat-value {
+    font-size: 21px;
+  }
   .main {
     padding: 22px 16px 50px;
+    padding-inline-end: calc(16px + env(safe-area-inset-right));
+    padding-inline-start: calc(16px + env(safe-area-inset-left));
+    padding-bottom: calc(50px + env(safe-area-inset-bottom));
+  }
+  .page-head h1 {
+    font-size: 24px;
   }
 }
 
@@ -611,6 +654,7 @@ tfoot td {
 .person-name {
   font-weight: 500;
   color: #fff;
+  white-space: nowrap;
 }
 
 .person-meta {

@@ -37,6 +37,9 @@ jobs:
 
       - name: بناء نسخة الإنتاج
         run: npm run build
+        env:
+          # التطبيق يُنشر تحت https://<user>.github.io/Call-Rent/
+          VITE_BASE: /Call-Rent/
 
       - uses: actions/configure-pages@v5
 
