@@ -133,7 +133,7 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
     try {
       const canvases = await ensureCanvases()
       if (canvases.length === 0) return
-      const file = pdfFileFromCanvases(canvases, fileName)
+      const file = await pdfFileFromCanvases(canvases, fileName)
       if (!file) return
       // إن لم يدعم الجهاز مشاركة الملفات، يُنزَّل الملف بدلاً منها
       if (!(await sharePdfFile(file))) downloadPdfFile(file)

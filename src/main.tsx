@@ -19,3 +19,15 @@ createRoot(document.getElementById('root')!).render(
     </ThemeProvider>
   </StrictMode>,
 )
+
+/*
+ * رسالة الإقلاع في index.html تُزال بعد نجاح أول رسم فعلي.
+ * لو أخفق الإقلاع بقيت ظاهرة تحمل سبب الإخفاق، بدل شاشة بيضاء صامتة.
+ */
+requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
+    if (document.querySelector('#root')?.childElementCount) {
+      document.getElementById('boot')?.remove()
+    }
+  })
+})

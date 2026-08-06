@@ -18,7 +18,75 @@
     <meta name="mobile-web-app-capable" content="yes" />
   </head>
   <body>
+    <!--
+      رسالة تظهر قبل إقلاع التطبيق وتُزال فور نجاحه.
+      سببها أن أي إخفاق في تحميل ملف واحد كان ينتج شاشة بيضاء صامتة
+      لا تدلّ على شيء — فيبدو التطبيق معطّلاً بلا سبب ظاهر.
+    -->
     <div id="root"></div>
+
+    <!-- خارج #root عمداً: لو أخفق الإقلاع بقيت الرسالة ظاهرة -->
+    <div id="boot">
+      <div id="boot-title">جارٍ تحميل النظام…</div>
+      <div id="boot-note">إن طالت هذه الرسالة، اضغط الزر لإعادة المحاولة</div>
+      <button id="boot-retry" type="button">إعادة التحميل</button>
+    </div>
+
+    <style>
+      #boot {
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 24px;
+        text-align: center;
+        background: #0a1226;
+        color: #e7edf8;
+      }
+      #boot-title { font-size: 17px; font-weight: 600; }
+      #boot-note { font-size: 13px; color: #9fb2d8; max-width: 30em; line-height: 1.7; }
+      #boot-retry {
+        margin-top: 6px;
+        padding: 9px 20px;
+        border-radius: 8px;
+        border: 1px solid #3e5c99;
+        background: #182b56;
+        color: #fff;
+        font-size: 14px;
+        font-family: inherit;
+      }
+    </style>
+
+    <script>
+      // يتجاوز أي نسخة محفوظة في ذاكرة المتصفح
+      document.getElementById('boot-retry').addEventListener('click', function () {
+        var u = new URL(window.location.href)
+        u.searchParams.set('r', String(Date.now()))
+        window.location.replace(u.toString())
+      })
+
+      // إخفاق تحميل وحدة أو خطأ في الإقلاع يُعرَض بدل الشاشة البيضاء
+      function bootFailed(detail) {
+        var t = document.getElementById('boot-title')
+        var n = document.getElementById('boot-note')
+        if (!t || !n) return
+        t.textContent = 'تعذّر تحميل النظام'
+        n.textContent = String(detail || '').slice(0, 300)
+      }
+      window.addEventListener('error', function (e) {
+        if (e.target && e.target.tagName === 'SCRIPT') bootFailed('تعذّر تحميل ملف البرنامج')
+        else if (e.message) bootFailed(e.message)
+      }, true)
+      window.addEventListener('unhandledrejection', function (e) {
+        bootFailed((e.reason && e.reason.message) || e.reason)
+      })
+    </script>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

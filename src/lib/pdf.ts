@@ -15,8 +15,15 @@
  *   ما يصل إلى المستثمر — لا فرق ولو بكسل واحد.
  */
 
-import jsPDF from 'jspdf'
-import { toCanvas } from 'html-to-image'
+/*
+ * مكتبتا التوليد تُحمَّلان عند أول استعمال فقط، لا مع إقلاع التطبيق.
+ * وزنهما معاً يفوق ضعف وزن التطبيق كله، وتحميلهما مقدماً كان يجعل
+ * الفتحة الأولى على شبكة الجوال بطيئة إلى حدّ تبدو معه الصفحة معطّلة.
+ */
+async function loadEngines() {
+  const [pdfMod, imgMod] = await Promise.all([import('jspdf'), import('html-to-image')])
+  return { jsPDF: pdfMod.default, toCanvas: imgMod.toCanvas }
+}
 
 /** أبعاد A4 بالمليمتر */
 const A4_W = 210
@@ -105,6 +112,8 @@ async function paintImages(
  * (معاينة أو PDF) مشتقّ من نتيجتها.
  */
 export async function renderDocCanvases(nodes: HTMLElement[]): Promise<HTMLCanvasElement[]> {
+  const { toCanvas } = await loadEngines()
+
   // انتظار اكتمال تحميل الخطوط حتى لا يُلتقط المستند بخط بديل
   await document.fonts?.ready
 
@@ -147,9 +156,12 @@ export function canvasesToImages(canvases: HTMLCanvasElement[]): string[] {
 }
 
 /** يجمّع الصفحات الملتقطة في ملف PDF بحجم A4 */
-export function pdfBlobFromCanvases(canvases: HTMLCanvasElement[]): Blob | null {
+export async function pdfBlobFromCanvases(
+  canvases: HTMLCanvasElement[],
+): Promise<Blob | null> {
   if (canvases.length === 0) return null
 
+  const { jsPDF } = await loadEngines()
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
 
   canvases.forEach((canvas, i) => {
@@ -174,11 +186,11 @@ export function pdfBlobFromCanvases(canvases: HTMLCanvasElement[]): Blob | null 
   return pdf.output('blob')
 }
 
-export function pdfFileFromCanvases(
+export async function pdfFileFromCanvases(
   canvases: HTMLCanvasElement[],
   filename: string,
-): File | null {
-  const blob = pdfBlobFromCanvases(canvases)
+): Promise<File | null> {
+  const blob = await pdfBlobFromCanvases(canvases)
   return blob ? new File([blob], filename, { type: 'application/pdf' }) : null
 }
 
