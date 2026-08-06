@@ -16,7 +16,7 @@ export const brand = {
   /** اسم الشركة كما في الشعار */
   name: 'CALL & RENT',
   /** الاسم بالعربية */
-  nameAr: 'كول آند رنت',
+  nameAr: 'كول اند رينت',
   /** شعار الشركة النصي */
   tagline: 'Drive Your Dreams, Discover Istanbul',
   /** وصف هذا النظام تحديداً — يظهر في الشريط الجانبي */

@@ -273,6 +273,7 @@ export function ReportDoc({
             <div className="doc-sign-line">
               <img src={signature} alt="التوقيع" className="doc-sign-img" />
             </div>
+            <div className="doc-sign-org">{company}</div>
             <div className="doc-sign-name">{signer}</div>
             <div className="doc-sign-title">{s.signatureTitle || 'الإدارة'}</div>
           </div>

@@ -52,6 +52,25 @@ function newId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`
 }
 
+/**
+ * قيم افتراضية قديمة تُستبدل بالجديدة عند التحميل.
+ * يُستبدل فقط ما لم يعدّله المستخدم بنفسه — أي ما يطابق القيمة القديمة حرفياً.
+ */
+const RENAMED: Partial<Record<keyof Settings, [string, string]>> = {
+  companyNameAr: ['كول آند رنت', 'كول اند رينت'],
+}
+
+function migrateSettings(stored: Partial<Settings>): Settings {
+  const merged: Settings = { ...defaultSettings, ...stored }
+  for (const key of Object.keys(RENAMED) as (keyof Settings)[]) {
+    const rename = RENAMED[key]
+    if (rename && merged[key] === rename[0]) {
+      merged[key] = rename[1]
+    }
+  }
+  return merged
+}
+
 function loadDb(): Database {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -62,7 +81,7 @@ function loadDb(): Database {
       investors: parsed.investors ?? [],
       contributions: parsed.contributions ?? [],
       profits: parsed.profits ?? [],
-      settings: { ...defaultSettings, ...(parsed.settings ?? {}) },
+      settings: migrateSettings(parsed.settings ?? {}),
     }
   } catch {
     return emptyDb
@@ -227,7 +246,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       investors: parsed.investors,
       contributions: parsed.contributions ?? [],
       profits: parsed.profits ?? [],
-      settings: { ...defaultSettings, ...(parsed.settings ?? {}) },
+      settings: migrateSettings(parsed.settings ?? {}),
     })
   }, [])
 
