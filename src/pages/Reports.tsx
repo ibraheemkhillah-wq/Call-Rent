@@ -19,6 +19,7 @@ import type { PeriodType } from '../types'
 import { Empty, Field } from '../components/ui'
 import { IconClose, IconDoc, IconEye, IconShare } from '../components/Icons'
 import { ReportDoc } from '../report/ReportDoc'
+import { BUILD_ID } from '../lib/pwa'
 
 const TYPES: PeriodType[] = ['monthly', 'quarterly', 'semiannual', 'annual']
 
@@ -168,7 +169,12 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
       <div className="page-head no-print">
         <div>
           <h1>التقارير</h1>
-          <p>اختر المستثمر ونوع الفترة ثم عاين التقرير وأرسله بصيغة PDF</p>
+          <p>
+            اختر المستثمر ونوع الفترة ثم عاين التقرير وأرسله بصيغة PDF
+            {/* رقم النسخة ظاهر هنا عمداً: يكشف فوراً ما إن كان الجهاز
+                يعرض آخر إصدار أم نسخة قديمة عالقة في ذاكرة التطبيق */}
+            <span className="build-tag">نسخة {BUILD_ID}</span>
+          </p>
         </div>
         <div className="head-actions">
           <button className="btn btn-primary" onClick={shareReport} disabled={Boolean(busy)}>

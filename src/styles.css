@@ -1067,3 +1067,18 @@ tfoot td {
 .print-only {
   display: none;
 }
+
+/* رقم نسخة التطبيق بجانب وصف صفحة التقارير */
+.build-tag {
+  display: inline-block;
+  margin-inline-start: 10px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2, transparent);
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  unicode-bidi: isolate;
+}

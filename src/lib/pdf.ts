@@ -22,19 +22,17 @@ import { toCanvas } from 'html-to-image'
 const A4_W = 210
 const A4_H = 297
 
-/** يحمّل صورة ويضمن فكّ ترميزها قبل الرسم */
-async function loadImage(src: string): Promise<HTMLImageElement | null> {
-  if (!src) return null
-  try {
+/** يحمّل صورة من مصدرها — مسار احتياطي حين لا تكون صورة الصفحة جاهزة */
+function loadImage(src: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    if (!src) return resolve(null)
     const img = new Image()
-    img.decoding = 'sync'
+    img.onload = () => resolve(img.naturalWidth > 0 ? img : null)
+    img.onerror = () => resolve(null)
     img.src = src
-    if (typeof img.decode === 'function') await img.decode()
-    else await new Promise((res, rej) => ((img.onload = res), (img.onerror = rej)))
-    return img.naturalWidth > 0 ? img : null
-  } catch {
-    return null
-  }
+    // بعض المتصفحات تُكمل الصور المضمّنة فوراً دون إطلاق onload
+    if (img.complete && img.naturalWidth > 0) resolve(img)
+  })
 }
 
 /**
@@ -55,21 +53,31 @@ async function loadImage(src: string): Promise<HTMLImageElement | null> {
  * النسخة الملتقطة فيُعاد حساب تخطيط الترويسة بدونها وتنزاح العناصر
  * المجاورة. وجودها يحفظ المساحات، والرسم فوقها يحفظ البكسلات.
  */
-async function paintImages(canvas: HTMLCanvasElement, node: HTMLElement): Promise<void> {
+async function paintImages(
+  canvas: HTMLCanvasElement,
+  node: HTMLElement,
+): Promise<{ painted: number; total: number }> {
+  const all = Array.from(node.querySelectorAll('img'))
   const ctx = canvas.getContext('2d')
-  if (!ctx) return
+  if (!ctx) return { painted: 0, total: all.length }
 
   const base = node.getBoundingClientRect()
-  if (base.width === 0 || base.height === 0) return
+  if (base.width === 0 || base.height === 0) return { painted: 0, total: all.length }
   const scaleX = canvas.width / base.width
   const scaleY = canvas.height / base.height
 
-  for (const el of Array.from(node.querySelectorAll('img'))) {
+  let painted = 0
+  for (const el of all) {
     const box = el.getBoundingClientRect()
     if (box.width === 0 || box.height === 0) continue
 
-    const img = await loadImage(el.currentSrc || el.src)
-    if (!img) continue
+    /*
+     * تُرسم صورة الصفحة نفسها متى كانت جاهزة: هي محمّلة ومفكوكة
+     * الترميز مسبقاً، فلا حاجة لإنشاء نسخة قد يفشل تحميلها بصمت.
+     */
+    const img =
+      el.complete && el.naturalWidth > 0 ? el : await loadImage(el.currentSrc || el.src)
+    if (!img || img.naturalWidth === 0) continue
 
     /*
      * مطابقة object-fit: contain — تُحفظ نسبة الصورة داخل صندوقها
@@ -81,8 +89,14 @@ async function paintImages(canvas: HTMLCanvasElement, node: HTMLElement): Promis
     const x = box.left - base.left + (box.width - w) / 2
     const y = box.top - base.top + (box.height - h) / 2
 
-    ctx.drawImage(img, x * scaleX, y * scaleY, w * scaleX, h * scaleY)
+    try {
+      ctx.drawImage(img, x * scaleX, y * scaleY, w * scaleX, h * scaleY)
+      painted++
+    } catch {
+      // تُحتسب ناقصة ويُبلَّغ عنها بدل أن تختفي بصمت
+    }
   }
+  return { painted, total: all.length }
 }
 
 /**
@@ -95,6 +109,7 @@ export async function renderDocCanvases(nodes: HTMLElement[]): Promise<HTMLCanva
   await document.fonts?.ready
 
   const out: HTMLCanvasElement[] = []
+  let missing = 0
   for (const node of nodes) {
     const canvas = await toCanvas(node, {
       pixelRatio: 2, // دقة مضاعفة لوضوح النص عند الطباعة
@@ -110,9 +125,19 @@ export async function renderDocCanvases(nodes: HTMLElement[]): Promise<HTMLCanva
     })
 
     // الشعار والتوقيع والختم تُرسم يدوياً — انظر شرح paintImages
-    await paintImages(canvas, node)
+    const { painted, total } = await paintImages(canvas, node)
+    missing += total - painted
     out.push(canvas)
   }
+
+  /*
+   * إخفاق رسم صورة كان يمرّ بصمت فيصل التقرير للمستثمر ناقص الشعار
+   * أو التوقيع دون أن ينتبه أحد. الآن يُعلَن عنه صراحةً.
+   */
+  if (missing > 0) {
+    throw new Error(`تعذّر رسم ${missing} من صور التقرير (الشعار/التوقيع/الختم)`)
+  }
+
   return out
 }
 
