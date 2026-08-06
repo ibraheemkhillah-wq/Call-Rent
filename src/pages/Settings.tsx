@@ -10,7 +10,7 @@ import {
   IconUpload,
 } from '../components/Icons'
 import { THEME_LABELS, useTheme, type ThemeMode } from '../theme/theme'
-import { BUILD_ID, checkForUpdate } from '../lib/pwa'
+import { BUILD_ID, checkForUpdate, hardReset } from '../lib/pwa'
 import defaultSignature from '../assets/signature.png'
 
 export function SettingsPage() {
@@ -108,13 +108,18 @@ export function SettingsPage() {
         <div className="card-title">نسخة التطبيق</div>
         <div className="card-sub">
           يُحدَّث التطبيق تلقائياً عند توفّر إصدار جديد. إن لاحظت أن شيئاً لم يتغيّر بعد
-          تحديث، اضغط الزر للفحص الفوري.
+          تحديث، اضغط «التحقق من التحديثات». وإن بقي الرقم على حاله رغم ذلك، اضغط
+          «تحديث إجباري»: يمحو نسخة التطبيق المخزّنة على الجهاز ويجلبها من جديد.
+          <strong> بيانات المستثمرين لا تتأثر.</strong>
         </div>
         <div className="row">
           <span className="badge badge-accent num">{BUILD_ID}</span>
           <button className="btn btn-sm" onClick={onCheckUpdate} disabled={checking}>
             <IconRefresh className="btn-icon" />
             {checking ? 'جارٍ الفحص…' : 'التحقق من التحديثات'}
+          </button>
+          <button className="btn btn-sm" onClick={() => void hardReset()}>
+            تحديث إجباري
           </button>
         </div>
       </div>

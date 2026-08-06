@@ -60,6 +60,38 @@ export async function checkForUpdate(): Promise<'updated' | 'latest' | 'unavaila
   return 'latest'
 }
 
+/**
+ * إعادة ضبط قاسية: تُلغى تسجيلات عامل الخدمة وتُمحى كل الملفات
+ * المخزّنة، ثم تُحمَّل الصفحة من الخادم.
+ *
+ * لماذا نحتاجها رغم وجود الفحص الدوري: على iOS قد يعلق التطبيق على
+ * نسخة قديمة عناداً — إن خُزِّن ملف عامل الخدمة نفسه في ذاكرة الشبكة،
+ * فلا يُجلب الجديد فلا يُكتشف التحديث أصلاً. هذه الدالة تكسر الحلقة
+ * من خارجها.
+ *
+ * بيانات المستثمرين محفوظة في localStorage ولا تمسّها هذه العملية.
+ */
+export async function hardReset(): Promise<void> {
+  try {
+    const regs = (await navigator.serviceWorker?.getRegistrations?.()) ?? []
+    await Promise.all(regs.map((r) => r.unregister()))
+  } catch {
+    /* المتصفح لا يدعم عمّال الخدمة — لا شيء لإلغائه */
+  }
+
+  try {
+    const keys = (await caches?.keys?.()) ?? []
+    await Promise.all(keys.map((k) => caches.delete(k)))
+  } catch {
+    /* لا ذاكرة ملفات — لا شيء لمحوه */
+  }
+
+  // معامل الوقت يتجاوز أي نسخة محفوظة في ذاكرة المتصفح نفسه
+  const url = new URL(window.location.href)
+  url.searchParams.set('تحديث', String(Date.now()))
+  window.location.replace(url.toString())
+}
+
 /** تاريخ بناء النسخة الحالية — يُحقن وقت البناء */
 export const BUILD_ID: string =
   typeof __BUILD_ID__ === 'string' ? __BUILD_ID__ : 'dev'
