@@ -8,12 +8,20 @@ import { VitePWA } from 'vite-plugin-pwa'
  */
 const base = process.env.VITE_BASE || '/'
 
+/** معرّف النسخة — يظهر في الإعدادات ليعرف المستخدم أنه على آخر إصدار */
+const buildId = new Date().toISOString().slice(0, 16).replace('T', ' ')
+
 export default defineConfig({
   base,
+  define: {
+    __BUILD_ID__: JSON.stringify(buildId),
+  },
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // التسجيل يتم يدوياً في src/lib/pwa.ts لإضافة فحص دوري للتحديثات
+      injectRegister: null,
       includeAssets: ['apple-touch-icon.png', 'favicon-64.png'],
       manifest: {
         name: 'CALL & RENT — إدارة المستثمرين',
@@ -44,6 +52,8 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,png,svg,woff2}'],
         cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
       },
     }),
   ],

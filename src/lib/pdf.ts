@@ -18,8 +18,60 @@ import { toCanvas } from 'html-to-image'
 const A4_W = 210
 const A4_H = 297
 
+/** ينشئ ملف PDF في الذاكرة دون تنزيله */
+export async function buildPdfFile(
+  nodes: HTMLElement[],
+  filename: string,
+): Promise<File | null> {
+  const blob = await renderPdfBlob(nodes)
+  return blob ? new File([blob], filename, { type: 'application/pdf' }) : null
+}
+
+/**
+ * مشاركة التقرير مباشرة (واتساب، بريد، أي تطبيق) عبر واجهة المشاركة
+ * في نظام التشغيل. هذا الطريق الصحيح على الجوال: يصل الملف كما هو
+ * تماماً، بلا هوامش طباعة ولا قصّ ولا صفحات زائدة.
+ *
+ * تُرجع false إن كان الجهاز لا يدعم مشاركة الملفات، فيتولّى المُنادي
+ * التنزيل بدلاً منها.
+ */
+export async function sharePdf(nodes: HTMLElement[], filename: string): Promise<boolean> {
+  const file = await buildPdfFile(nodes, filename)
+  if (!file) return false
+
+  const nav = navigator as Navigator & {
+    canShare?: (data: ShareData) => boolean
+    share?: (data: ShareData) => Promise<void>
+  }
+  if (!nav.share || !nav.canShare?.({ files: [file] })) return false
+
+  try {
+    await nav.share({ files: [file], title: filename.replace(/\.pdf$/, '') })
+    return true
+  } catch (err) {
+    // إلغاء المستخدم للمشاركة ليس خطأ
+    if ((err as Error)?.name === 'AbortError') return true
+    return false
+  }
+}
+
 export async function exportDocsToPdf(nodes: HTMLElement[], filename: string): Promise<void> {
-  if (nodes.length === 0) return
+  const blob = await renderPdfBlob(nodes)
+  if (!blob) return
+
+  // تنزيل يدوي بدل pdf.save() لضمان بقاء اسم الملف العربي كما هو
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
+async function renderPdfBlob(nodes: HTMLElement[]): Promise<Blob | null> {
+  if (nodes.length === 0) return null
 
   // انتظار اكتمال تحميل الخطوط حتى لا يُلتقط المستند بخط بديل
   await document.fonts?.ready
@@ -60,15 +112,7 @@ export async function exportDocsToPdf(nodes: HTMLElement[], filename: string): P
     )
   }
 
-  // تنزيل يدوي بدل pdf.save() لضمان بقاء اسم الملف العربي كما هو
-  const url = URL.createObjectURL(pdf.output('blob'))
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  URL.revokeObjectURL(url)
+  return pdf.output('blob')
 }
 
 /** اسم ملف صالح: يزيل المحارف التي ترفضها أنظمة الملفات */

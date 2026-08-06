@@ -7,10 +7,10 @@ import {
   periodCount,
   periodLabel,
 } from '../lib/calc'
-import { exportDocsToPdf, safeFileName } from '../lib/pdf'
+import { exportDocsToPdf, safeFileName, sharePdf } from '../lib/pdf'
 import type { PeriodType } from '../types'
 import { Empty, Field } from '../components/ui'
-import { IconDoc, IconDownload, IconPrint } from '../components/Icons'
+import { IconDoc, IconDownload, IconShare } from '../components/Icons'
 import { ReportDoc } from '../report/ReportDoc'
 
 const TYPES: PeriodType[] = ['monthly', 'quarterly', 'semiannual', 'annual']
@@ -58,24 +58,52 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
   )
 
   const shellRef = useRef<HTMLDivElement>(null)
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState<'' | 'download' | 'share'>('')
   const [err, setErr] = useState('')
 
-  async function downloadPdf() {
+  /**
+   * زر الإرسال يظهر دائماً: يحاول مشاركة الملف عبر نظام التشغيل، فإن لم
+   * يدعمه الجهاز نزّل الملف بدلاً منه. تجنّبنا إخفاءه بناءً على فحص
+   * القدرات لأن الفحص يعطي نتائج خاطئة في بعض المتصفحات فيختفي الزر
+   * عن مستخدم يحتاجه.
+   */
+
+  function currentNodesAndName() {
     const nodes = Array.from(shellRef.current?.querySelectorAll<HTMLElement>('.doc') ?? [])
+    const who =
+      investorId === 'all'
+        ? 'جميع-المستثمرين'
+        : (db.investors.find((i) => i.id === investorId)?.name ?? 'مستثمر')
+    return { nodes, name: safeFileName(['تقرير', who, periodLabel(type, year, index)]) }
+  }
+
+  async function downloadPdf() {
+    const { nodes, name } = currentNodesAndName()
     if (nodes.length === 0) return
-    setBusy(true)
+    setBusy('download')
     setErr('')
     try {
-      const who =
-        investorId === 'all'
-          ? 'جميع-المستثمرين'
-          : (db.investors.find((i) => i.id === investorId)?.name ?? 'مستثمر')
-      await exportDocsToPdf(nodes, safeFileName(['تقرير', who, periodLabel(type, year, index)]))
+      await exportDocsToPdf(nodes, name)
     } catch (e) {
       setErr(`تعذّر إنشاء الملف: ${(e as Error).message}`)
     } finally {
-      setBusy(false)
+      setBusy('')
+    }
+  }
+
+  async function shareReport() {
+    const { nodes, name } = currentNodesAndName()
+    if (nodes.length === 0) return
+    setBusy('share')
+    setErr('')
+    try {
+      const shared = await sharePdf(nodes, name)
+      // إن لم يدعم الجهاز مشاركة الملفات، يُنزَّل الملف بدلاً منها
+      if (!shared) await exportDocsToPdf(nodes, name)
+    } catch (e) {
+      setErr(`تعذّرت المشاركة: ${(e as Error).message}`)
+    } finally {
+      setBusy('')
     }
   }
 
@@ -107,13 +135,13 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
           <p>اختر المستثمر ونوع الفترة ثم صدّر التقرير بصيغة PDF</p>
         </div>
         <div className="head-actions">
-          <button className="btn btn-primary" onClick={downloadPdf} disabled={busy}>
-            <IconDownload className="btn-icon" />
-            {busy ? 'جارٍ إنشاء الملف…' : 'تحميل PDF'}
+          <button className="btn btn-primary" onClick={shareReport} disabled={Boolean(busy)}>
+            <IconShare className="btn-icon" />
+            {busy === 'share' ? 'جارٍ التحضير…' : 'إرسال التقرير'}
           </button>
-          <button className="btn" onClick={() => window.print()} disabled={busy}>
-            <IconPrint className="btn-icon" />
-            طباعة
+          <button className="btn" onClick={downloadPdf} disabled={Boolean(busy)}>
+            <IconDownload className="btn-icon" />
+            {busy === 'download' ? 'جارٍ إنشاء الملف…' : 'تحميل PDF'}
           </button>
         </div>
       </div>
@@ -164,19 +192,29 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
           )}
 
           <div className="spacer" />
-          <button className="btn btn-primary" onClick={downloadPdf} disabled={busy}>
+          <button className="btn btn-primary" onClick={shareReport} disabled={Boolean(busy)}>
+            <IconShare className="btn-icon" />
+            {busy === 'share' ? 'جارٍ التحضير…' : 'إرسال التقرير'}
+          </button>
+          <button className="btn" onClick={downloadPdf} disabled={Boolean(busy)}>
             <IconDownload className="btn-icon" />
-            {busy ? 'جارٍ الإنشاء…' : 'تحميل PDF'}
+            {busy === 'download' ? 'جارٍ الإنشاء…' : 'تحميل PDF'}
           </button>
         </div>
 
         <div className="divider" />
         <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-          <strong className="accent">«تحميل PDF»</strong> ينشئ الملف داخل التطبيق مباشرة —
-          صفحة واحدة لكل مستثمر، بلا هوامش أو روابط أو أرقام صفحات يضيفها المتصفح.
+          <strong className="accent">«إرسال التقرير»</strong> ينشئ الملف داخل التطبيق ثم
+          يفتح قائمة المشاركة لتختار واتساب أو البريد مباشرة — صفحة واحدة كاملة لكل
+          مستثمر، تصل للمستثمر كما تراها تماماً بلا هوامش أو روابط أو أرقام صفحات.
+          {' '}(على الأجهزة التي لا تدعم المشاركة يُنزَّل الملف بدلاً منها.)
           {investorId === 'all' &&
             ' عند اختيار «جميع المستثمرين» يخرج ملف واحد، صفحة مستقلة لكل مستثمر.'}
-          {' '}زر «طباعة» بديل للطباعة الورقية المباشرة.
+        </p>
+        <p className="muted" style={{ margin: '8px 0 0', fontSize: 12.5 }}>
+          ⚠️ <strong>لا تستخدم «مشاركة ← طباعة» من المتصفح</strong> لإرسال التقرير: نافذة
+          الطباعة تضيف رابط الموقع وتاريخاً وأرقام صفحات، وتفرض هوامش تقصّ أطراف التقرير
+          وتقسّمه على عدة صفحات — ولا يمكن إلغاء ذلك من داخل التطبيق.
         </p>
         {err && (
           <p className="neg" style={{ margin: '10px 0 0', fontSize: 13 }}>

@@ -1,8 +1,16 @@
 import { useRef, useState } from 'react'
 import { useStore } from '../store'
 import { Field, Wordmark } from '../components/ui'
-import { IconDownload, IconMoon, IconSun, IconTrash, IconUpload } from '../components/Icons'
+import {
+  IconDownload,
+  IconMoon,
+  IconRefresh,
+  IconSun,
+  IconTrash,
+  IconUpload,
+} from '../components/Icons'
 import { THEME_LABELS, useTheme, type ThemeMode } from '../theme/theme'
+import { BUILD_ID, checkForUpdate } from '../lib/pwa'
 
 export function SettingsPage() {
   const { db, updateSettings, exportJson, importJson, resetAll } = useStore()
@@ -11,6 +19,20 @@ export function SettingsPage() {
   const fileRef = useRef<HTMLInputElement>(null)
   const logoRef = useRef<HTMLInputElement>(null)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
+  const [checking, setChecking] = useState(false)
+
+  async function onCheckUpdate() {
+    setChecking(true)
+    setMsg(null)
+    const result = await checkForUpdate()
+    setChecking(false)
+    if (result === 'updated') return // تُعاد صفحة التطبيق تلقائياً
+    setMsg(
+      result === 'latest'
+        ? { text: 'أنت على أحدث نسخة من التطبيق', ok: true }
+        : { text: 'تعذّر الفحص — تأكد من الاتصال بالإنترنت', ok: false },
+    )
+  }
 
   function onLogo(file: File) {
     if (file.size > 1024 * 1024) {
@@ -65,6 +87,21 @@ export function SettingsPage() {
           <span className={msg.ok ? 'pos' : 'neg'}>{msg.text}</span>
         </div>
       )}
+
+      <div className="card" style={{ marginBottom: 22 }}>
+        <div className="card-title">نسخة التطبيق</div>
+        <div className="card-sub">
+          يُحدَّث التطبيق تلقائياً عند توفّر إصدار جديد. إن لاحظت أن شيئاً لم يتغيّر بعد
+          تحديث، اضغط الزر للفحص الفوري.
+        </div>
+        <div className="row">
+          <span className="badge badge-accent num">{BUILD_ID}</span>
+          <button className="btn btn-sm" onClick={onCheckUpdate} disabled={checking}>
+            <IconRefresh className="btn-icon" />
+            {checking ? 'جارٍ الفحص…' : 'التحقق من التحديثات'}
+          </button>
+        </div>
+      </div>
 
       <div className="card" style={{ marginBottom: 22 }}>
         <div className="card-title">وضع العرض</div>

@@ -154,3 +154,17 @@ export const IconMoon = ({ className, size = 19 }: P) => (
     <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
   </svg>
 )
+
+export const IconShare = ({ className, size = 18 }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M12 16V3M8 7l4-4 4 4" />
+    <path d="M20 14v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-5" />
+  </svg>
+)
+
+export const IconRefresh = ({ className, size = 17 }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+    <path d="M21 3v6h-6" />
+  </svg>
+)
