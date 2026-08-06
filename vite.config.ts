@@ -16,6 +16,18 @@ export default defineConfig({
   define: {
     __BUILD_ID__: JSON.stringify(buildId),
   },
+  build: {
+    /*
+     * تُضمَّن صور الهوية والتوقيع داخل الحزمة كـ data URI بدل روابط ملفات.
+     * السبب: توليد ملف PDF يلتقط الصفحة عبر SVG foreignObject، وأي صورة
+     * برابط خارجي تحتاج جلباً قد يفشل أو يتأخر فتختفي من الملف الناتج.
+     * الخطوط تبقى ملفات منفصلة (السلوك الافتراضي) حتى لا تتضخّم الحزمة.
+     */
+    assetsInlineLimit(filePath) {
+      if (/\.png$/i.test(filePath)) return true
+      return undefined
+    },
+  },
   plugins: [
     react(),
     VitePWA({

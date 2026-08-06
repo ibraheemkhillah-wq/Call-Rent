@@ -3,6 +3,10 @@
 import { useEffect, type ReactNode } from 'react'
 import { IconClose, IconMoon, IconSun } from './Icons'
 import { useTheme } from '../theme/theme'
+/*
+ * تُضمَّن هذه الصور كـ data URI عبر assetsInlineLimit في vite.config.ts،
+ * فتصير جزءاً من الصفحة نفسها ولا تحتاج جلباً عند توليد ملف PDF.
+ */
 import logoLight from '../assets/logo-light.png'
 import logoDark from '../assets/logo-dark.png'
 

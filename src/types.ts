@@ -61,6 +61,8 @@ export interface Settings {
   /** توقيع/اسم المسؤول أسفل التقرير */
   signatureName: string
   signatureTitle: string
+  /** صورة التوقيع المرفوعة (data URI) — تتجاوز التوقيع المدمج */
+  signatureImage: string
 }
 
 export interface Database {

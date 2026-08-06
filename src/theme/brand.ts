@@ -63,6 +63,12 @@ export const brand = {
     display: "'Amiri', 'IBM Plex Sans Arabic', Georgia, serif",
   },
 
+  /** الموقّع المعتمد على التقارير */
+  signature: {
+    name: 'إبراهيم خله',
+    title: 'المدير التنفيذي',
+  },
+
   /** بيانات التواصل التي تظهر في تذييل التقارير — عدّلها من صفحة الإعدادات */
   contact: {
     phone: '',

@@ -5,6 +5,9 @@ import { PERIOD_NAMES, annualizeFactor } from '../lib/calc'
 import type { Settings } from '../types'
 import { dateLabel, money, monthLabel, percent, todayIso } from '../lib/format'
 import { Wordmark } from '../components/ui'
+import { brand } from '../theme/brand'
+import signatureImg from '../assets/signature.png'
+import stampLogo from '../assets/logo-mark.png'
 import { PerformanceChart } from './PerformanceChart'
 import { useFitToPage } from './useFitToPage'
 
@@ -33,6 +36,8 @@ export function ReportDoc({
   const s = settings
   const sym = s.currencySymbol || '$'
   const company = s.companyNameAr || s.companyName || 'الشركة'
+  const signer = s.signatureName || brand.signature.name
+  const signature = s.signatureImage || signatureImg
   const monthsWithData = report.months.filter((m) => m.hasEntry)
 
   /** يضمن بقاء التقرير في صفحة واحدة مهما طال الجدول */
@@ -262,20 +267,22 @@ export function ReportDoc({
           </table>
         </section>
 
-        {/* ═══════════ التوقيع ═══════════ */}
+        {/* ═══════════ التوقيع والختم ═══════════ */}
         <div className="doc-sign">
           <div className="doc-sign-box">
-            <div className="doc-sign-line" />
-            <div className="doc-sign-name">{s.signatureName || company}</div>
+            <div className="doc-sign-line">
+              <img src={signature} alt="التوقيع" className="doc-sign-img" />
+            </div>
+            <div className="doc-sign-name">{signer}</div>
             <div className="doc-sign-title">{s.signatureTitle || 'الإدارة'}</div>
           </div>
+
+          {/* ختم الاعتماد — الشعار داخل دائرة */}
           <div className="doc-stamp">
-            <div>
-              {company}
-              <br />
-              معتمد
-            </div>
+            <img src={stampLogo} alt="" className="doc-stamp-logo" />
+            <div className="doc-stamp-word">معتمد</div>
           </div>
+
           <div className="doc-sign-box">
             <div className="doc-sign-line" />
             <div className="doc-sign-name">{report.investor.name}</div>

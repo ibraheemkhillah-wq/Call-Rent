@@ -35,8 +35,9 @@ export const defaultSettings: Settings = {
   email: brand.contact.email,
   website: brand.contact.website,
   address: brand.contact.address,
-  signatureName: '',
-  signatureTitle: 'المدير التنفيذي',
+  signatureName: brand.signature.name,
+  signatureTitle: brand.signature.title,
+  signatureImage: '',
 }
 
 const emptyDb: Database = {

@@ -11,6 +11,7 @@ import {
 } from '../components/Icons'
 import { THEME_LABELS, useTheme, type ThemeMode } from '../theme/theme'
 import { BUILD_ID, checkForUpdate } from '../lib/pwa'
+import defaultSignature from '../assets/signature.png'
 
 export function SettingsPage() {
   const { db, updateSettings, exportJson, importJson, resetAll } = useStore()
@@ -18,6 +19,7 @@ export function SettingsPage() {
   const s = db.settings
   const fileRef = useRef<HTMLInputElement>(null)
   const logoRef = useRef<HTMLInputElement>(null)
+  const signRef = useRef<HTMLInputElement>(null)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
   const [checking, setChecking] = useState(false)
 
@@ -32,6 +34,20 @@ export function SettingsPage() {
         ? { text: 'أنت على أحدث نسخة من التطبيق', ok: true }
         : { text: 'تعذّر الفحص — تأكد من الاتصال بالإنترنت', ok: false },
     )
+  }
+
+  function onSignature(file: File) {
+    if (file.size > 1024 * 1024) {
+      setMsg({ text: 'حجم صورة التوقيع كبير — الحد الأقصى 1 ميغابايت', ok: false })
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      updateSettings({ signatureImage: String(reader.result) })
+      setMsg({ text: 'تم تحديث صورة التوقيع', ok: true })
+    }
+    reader.onerror = () => setMsg({ text: 'تعذّرت قراءة الصورة', ok: false })
+    reader.readAsDataURL(file)
   }
 
   function onLogo(file: File) {
@@ -233,7 +249,7 @@ export function SettingsPage() {
             <input
               value={s.signatureName}
               onChange={(e) => updateSettings({ signatureName: e.target.value })}
-              placeholder="الاسم الذي يظهر فوق خط التوقيع"
+              placeholder="الاسم الذي يظهر تحت خط التوقيع"
             />
           </Field>
           <Field label="الصفة الوظيفية">
@@ -242,6 +258,39 @@ export function SettingsPage() {
               onChange={(e) => updateSettings({ signatureTitle: e.target.value })}
             />
           </Field>
+        </div>
+
+        <div className="divider" />
+        <div className="row" style={{ gap: 20 }}>
+          <div className="sign-preview">
+            <img src={s.signatureImage || defaultSignature} alt="التوقيع" />
+          </div>
+          <div>
+            <div className="row">
+              <button className="btn btn-sm" onClick={() => signRef.current?.click()}>
+                <IconUpload className="btn-icon" />
+                {s.signatureImage ? 'استبدال صورة التوقيع' : 'رفع صورة توقيع'}
+              </button>
+              {s.signatureImage && (
+                <button
+                  className="btn btn-sm btn-danger"
+                  onClick={() => updateSettings({ signatureImage: '' })}
+                >
+                  العودة للتوقيع المدمج
+                </button>
+              )}
+            </div>
+            <p className="hint" style={{ marginTop: 8 }}>
+              تظهر فوق خط التوقيع في كل تقرير. يُفضّل PNG بخلفية شفافة.
+            </p>
+            <input
+              ref={signRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) => e.target.files?.[0] && onSignature(e.target.files[0])}
+            />
+          </div>
         </div>
       </div>
 
