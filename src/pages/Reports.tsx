@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
 import {
   PERIOD_NAMES,
   buildPeriodReport,
+  performanceSeries,
   periodCount,
   periodLabel,
 } from '../lib/calc'
+import { exportDocsToPdf, safeFileName } from '../lib/pdf'
 import type { PeriodType } from '../types'
 import { Empty, Field } from '../components/ui'
-import { IconDoc, IconPrint } from '../components/Icons'
+import { IconDoc, IconDownload, IconPrint } from '../components/Icons'
 import { ReportDoc } from '../report/ReportDoc'
 
 const TYPES: PeriodType[] = ['monthly', 'quarterly', 'semiannual', 'annual']
@@ -48,11 +50,34 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
 
   const reports = useMemo(
     () =>
-      targets.map((inv) =>
-        buildPeriodReport(inv, db.contributions, db.profits, type, year, index),
-      ),
+      targets.map((inv) => ({
+        report: buildPeriodReport(inv, db.contributions, db.profits, type, year, index),
+        series: performanceSeries(inv, db.contributions, db.profits, type, year, index),
+      })),
     [targets, db.contributions, db.profits, type, year, index],
   )
+
+  const shellRef = useRef<HTMLDivElement>(null)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function downloadPdf() {
+    const nodes = Array.from(shellRef.current?.querySelectorAll<HTMLElement>('.doc') ?? [])
+    if (nodes.length === 0) return
+    setBusy(true)
+    setErr('')
+    try {
+      const who =
+        investorId === 'all'
+          ? 'جميع-المستثمرين'
+          : (db.investors.find((i) => i.id === investorId)?.name ?? 'مستثمر')
+      await exportDocsToPdf(nodes, safeFileName(['تقرير', who, periodLabel(type, year, index)]))
+    } catch (e) {
+      setErr(`تعذّر إنشاء الملف: ${(e as Error).message}`)
+    } finally {
+      setBusy(false)
+    }
+  }
 
   if (db.investors.length === 0) {
     return (
@@ -82,9 +107,13 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
           <p>اختر المستثمر ونوع الفترة ثم صدّر التقرير بصيغة PDF</p>
         </div>
         <div className="head-actions">
-          <button className="btn btn-primary" onClick={() => window.print()}>
+          <button className="btn btn-primary" onClick={downloadPdf} disabled={busy}>
+            <IconDownload className="btn-icon" />
+            {busy ? 'جارٍ إنشاء الملف…' : 'تحميل PDF'}
+          </button>
+          <button className="btn" onClick={() => window.print()} disabled={busy}>
             <IconPrint className="btn-icon" />
-            تصدير PDF / طباعة
+            طباعة
           </button>
         </div>
       </div>
@@ -135,26 +164,35 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
           )}
 
           <div className="spacer" />
-          <button className="btn btn-primary" onClick={() => window.print()}>
-            <IconPrint className="btn-icon" />
-            تصدير PDF
+          <button className="btn btn-primary" onClick={downloadPdf} disabled={busy}>
+            <IconDownload className="btn-icon" />
+            {busy ? 'جارٍ الإنشاء…' : 'تحميل PDF'}
           </button>
         </div>
 
         <div className="divider" />
         <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-          <strong className="accent">طريقة الحفظ كـ PDF:</strong> اضغط «تصدير PDF»، ثم من نافذة
-          الطباعة اختر الوجهة <strong>«حفظ كـ PDF» / Save as PDF</strong>، واضبط الهوامش على
-          «بلا / None» وفعّل خيار <strong>«طباعة الخلفيات» / Background graphics</strong> للحصول
-          على التصميم كاملاً.
+          <strong className="accent">«تحميل PDF»</strong> ينشئ الملف داخل التطبيق مباشرة —
+          صفحة واحدة لكل مستثمر، بلا هوامش أو روابط أو أرقام صفحات يضيفها المتصفح.
           {investorId === 'all' &&
-            ' — عند اختيار «جميع المستثمرين» يصدر التقرير في ملف واحد، صفحة مستقلة لكل مستثمر.'}
+            ' عند اختيار «جميع المستثمرين» يخرج ملف واحد، صفحة مستقلة لكل مستثمر.'}
+          {' '}زر «طباعة» بديل للطباعة الورقية المباشرة.
         </p>
+        {err && (
+          <p className="neg" style={{ margin: '10px 0 0', fontSize: 13 }}>
+            {err}
+          </p>
+        )}
       </div>
 
-      <div className="report-shell print-area">
-        {reports.map((r) => (
-          <ReportDoc key={r.investor.id} report={r} settings={db.settings} />
+      <div className="report-shell print-area" ref={shellRef}>
+        {reports.map(({ report, series }) => (
+          <ReportDoc
+            key={report.investor.id}
+            report={report}
+            series={series}
+            settings={db.settings}
+          />
         ))}
       </div>
     </>

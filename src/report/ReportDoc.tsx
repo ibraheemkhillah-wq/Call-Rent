@@ -1,11 +1,12 @@
-/** مستند التقرير الفاخر — صفحة A4 جاهزة للطباعة/التصدير PDF */
+/** مستند التقرير — صفحة A4 واحدة، مضغوطة وجاهزة للتصدير PDF */
 
-import type { PeriodReport } from '../lib/calc'
+import type { PeriodReport, SeriesPoint } from '../lib/calc'
 import { PERIOD_NAMES, annualizeFactor } from '../lib/calc'
 import type { Settings } from '../types'
 import { dateLabel, money, monthLabel, percent, todayIso } from '../lib/format'
-import { usePageSnap } from './usePageSnap'
 import { Wordmark } from '../components/ui'
+import { PerformanceChart } from './PerformanceChart'
+import { useFitToPage } from './useFitToPage'
 
 function serial(r: PeriodReport): string {
   const code =
@@ -20,98 +21,77 @@ function serial(r: PeriodReport): string {
   return `RPT-${r.year}-${code}-${tail}`
 }
 
-export function ReportDoc({ report, settings }: { report: PeriodReport; settings: Settings }) {
+export function ReportDoc({
+  report,
+  settings,
+  series,
+}: {
+  report: PeriodReport
+  settings: Settings
+  series: SeriesPoint[]
+}) {
   const s = settings
   const sym = s.currencySymbol || '$'
   const company = s.companyNameAr || s.companyName || 'الشركة'
   const monthsWithData = report.months.filter((m) => m.hasEntry)
-  const maxProfit = Math.max(...report.months.map((m) => m.profit), 1)
-  const showChart = report.months.length > 1
 
-  /** يجعل ارتفاع المستند مضاعفاً لصفحة A4 حتى يستقر التذييل في أسفل آخر صفحة */
-  const docRef = usePageSnap<HTMLElement>([report, settings])
+  /** يضمن بقاء التقرير في صفحة واحدة مهما طال الجدول */
+  const fitRef = useFitToPage<HTMLElement>([report, settings, series])
 
   return (
-    <article className="doc" ref={docRef}>
-      {/* ─────────── الترويسة ─────────── */}
+    <article className="doc" dir="rtl" lang="ar" ref={fitRef}>
+      {/* ═══════════ الترويسة المضغوطة ═══════════ */}
       <header className="doc-header">
         <div className="doc-header-top">
-          <div className="doc-brand">
-            {s.logoDataUrl ? (
-              <>
-                <div className="doc-logo">
-                  <img src={s.logoDataUrl} alt="شعار الشركة" />
-                </div>
-                <div>
-                  <div className="doc-company">{company}</div>
-                  {s.tagline && <div className="doc-tagline">{s.tagline}</div>}
-                </div>
-              </>
-            ) : (
-              <div>
-                <Wordmark variant="light" className="doc-logo-wordmark" />
-                {s.tagline && <div className="doc-tagline">{s.tagline}</div>}
-              </div>
-            )}
-          </div>
-          <div className="doc-meta">
-            <div>
-              رقم التقرير: <b>{serial(report)}</b>
+          {s.logoDataUrl ? (
+            <div className="doc-logo">
+              <img src={s.logoDataUrl} alt="شعار الشركة" />
             </div>
-            <div>
-              تاريخ الإصدار: <b>{dateLabel(todayIso())}</b>
-            </div>
-            <div>
-              العملة: <b>{s.currency || 'USD'}</b>
-            </div>
-          </div>
-        </div>
+          ) : (
+            <Wordmark variant="light" className="doc-logo-wordmark" />
+          )}
 
-        <div className="doc-title-block">
-          <div className="doc-kicker">تقرير {PERIOD_NAMES[report.type]}</div>
-          <h1 className="doc-title">{report.investor.name}</h1>
-          <div className="doc-subtitle">
-            بيان الأرباح والعوائد الاستثمارية — {report.label}
+          <div className="doc-head-title">
+            <div className="doc-kicker">تقرير {PERIOD_NAMES[report.type]}</div>
+            <h1 className="doc-title">{report.investor.name}</h1>
+            <div className="doc-subtitle">بيان الأرباح والعوائد — {report.label}</div>
+          </div>
+
+          <div className="doc-meta">
+            <div>{serial(report)}</div>
+            <div>{dateLabel(todayIso())}</div>
+            <div>{s.currency || 'USD'}</div>
           </div>
         </div>
       </header>
 
       <div className="doc-body">
-        {/* ─────────── بيانات المستثمر ─────────── */}
-        <section className="doc-section">
-          <h2 className="doc-section-title">
-            بيانات المستثمر
-            <small>معلومات الحساب الاستثماري</small>
-          </h2>
-          <div className="doc-identity">
-            <div className="doc-kv">
-              <span className="k">الاسم الكامل</span>
-              <span className="v">{report.investor.name}</span>
-            </div>
-            <div className="doc-kv">
-              <span className="k">تاريخ الانضمام</span>
-              <span className="v">{dateLabel(report.investor.joinDate)}</span>
-            </div>
-            <div className="doc-kv">
-              <span className="k">رقم الهوية</span>
-              <span className="v">{report.investor.nationalId || '—'}</span>
-            </div>
-            <div className="doc-kv">
-              <span className="k">رقم الهاتف</span>
-              <span className="v num">{report.investor.phone || '—'}</span>
-            </div>
-            <div className="doc-kv">
-              <span className="k">البريد الإلكتروني</span>
-              <span className="v num">{report.investor.email || '—'}</span>
-            </div>
-            <div className="doc-kv">
-              <span className="k">حالة الحساب</span>
-              <span className="v">{report.investor.active ? 'نشط' : 'غير نشط'}</span>
-            </div>
-          </div>
-        </section>
+        {/* ═══════════ شريط بيانات المستثمر ═══════════ */}
+        <div className="doc-idbar">
+          <span>
+            <b>انضم:</b> {dateLabel(report.investor.joinDate)}
+          </span>
+          {report.investor.nationalId && (
+            <span>
+              <b>الهوية:</b> <span className="num">{report.investor.nationalId}</span>
+            </span>
+          )}
+          {report.investor.phone && (
+            <span>
+              <b>الهاتف:</b> <span className="num">{report.investor.phone}</span>
+            </span>
+          )}
+          {report.investor.email && (
+            <span>
+              <b>البريد:</b> <span className="num">{report.investor.email}</span>
+            </span>
+          )}
+          <span>
+            <b>الحساب:</b> {report.investor.active ? 'نشط' : 'غير نشط'}
+          </span>
+        </div>
 
-        {/* ─────────── أبرز الأرقام ─────────── */}
+        {/* ═══════════ الأرقام الرئيسية ═══════════ */}
         <section className="doc-section">
           <h2 className="doc-section-title">
             ملخص {report.label}
@@ -119,16 +99,14 @@ export function ReportDoc({ report, settings }: { report: PeriodReport; settings
           </h2>
           <div className="doc-highlights">
             <div className="doc-hl">
-              <div className="hl-label">إجمالي رأس المال المستثمر</div>
+              <div className="hl-label">رأس المال المستثمر</div>
               <div className="hl-value">{money(report.closingCapital, sym)}</div>
               <div className="hl-foot">حتى نهاية الفترة</div>
             </div>
             <div className="doc-hl feature">
               <div className="hl-label">صافي أرباح الفترة</div>
               <div className="hl-value">{money(report.totalProfit, sym)}</div>
-              <div className="hl-foot">
-                منها مصروف {money(report.paidProfit, sym)}
-              </div>
+              <div className="hl-foot">منها مصروف {money(report.paidProfit, sym)}</div>
             </div>
             <div className="doc-hl">
               <div className="hl-label">نسبة العائد للفترة</div>
@@ -147,7 +125,23 @@ export function ReportDoc({ report, settings }: { report: PeriodReport; settings
           </div>
         </section>
 
-        {/* ─────────── التفصيل الشهري ─────────── */}
+        {/* ═══════════ الرسم البياني ═══════════ */}
+        {series.length > 0 && (
+          <section className="doc-section">
+            <h2 className="doc-section-title">
+              أداء العائد الشهري
+              <small>
+                <span className="lg-dot lg-bar" /> الربح ({sym}) &nbsp;
+                <span className="lg-dot lg-line" /> النسبة المئوية %
+              </small>
+            </h2>
+            <div className="doc-chart-box">
+              <PerformanceChart points={series} />
+            </div>
+          </section>
+        )}
+
+        {/* ═══════════ التفصيل الشهري ═══════════ */}
         <section className="doc-section">
           <h2 className="doc-section-title">
             التفصيل الشهري
@@ -192,41 +186,16 @@ export function ReportDoc({ report, settings }: { report: PeriodReport; settings
               </tr>
             </tfoot>
           </table>
-          <div style={{ marginTop: 6, fontSize: '8pt', color: '#6b7280' }}>
-            * قيمة عمود رأس المال في صف الإجمالي تمثّل «متوسط رأس المال» خلال الفترة.
-          </div>
         </section>
 
-        {/* ─────────── الرسم البياني ─────────── */}
-        {showChart && (
-          <section className="doc-section">
-            <h2 className="doc-section-title">
-              تطوّر الأرباح الشهرية
-              <small>بالـ {s.currency || 'USD'}</small>
-            </h2>
-            <div className="doc-chart">
-              {report.months.map((m) => (
-                <div className="doc-chart-col" key={m.month}>
-                  <div className="doc-chart-val">
-                    {m.profit > 0 ? Math.round(m.profit).toLocaleString('en-US') : ''}
-                  </div>
-                  <div
-                    className="doc-chart-bar"
-                    style={{ height: `${Math.max((m.profit / maxProfit) * 78, 1)}%` }}
-                  />
-                  <div className="doc-chart-cap">{monthLabel(m.month).split(' ')[0]}</div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ─────────── حركات رأس المال ─────────── */}
+        {/* ═══════════ حركات رأس المال ═══════════ */}
         {report.movements.length > 0 && (
           <section className="doc-section">
             <h2 className="doc-section-title">
               حركات رأس المال خلال الفترة
-              <small>الإيداعات والسحوبات</small>
+              <small>
+                من {money(report.openingCapital, sym)} إلى {money(report.closingCapital, sym)}
+              </small>
             </h2>
             <table>
               <thead>
@@ -249,33 +218,17 @@ export function ReportDoc({ report, settings }: { report: PeriodReport; settings
                   </tr>
                 ))}
               </tbody>
-              <tfoot>
-                <tr>
-                  <td>رأس المال في بداية الفترة</td>
-                  <td className="num accent">{money(report.openingCapital, sym)}</td>
-                  <td>رأس المال في نهاية الفترة</td>
-                  <td className="num accent">{money(report.closingCapital, sym)}</td>
-                </tr>
-              </tfoot>
             </table>
           </section>
         )}
 
-        {/* ─────────── الملخص التراكمي ─────────── */}
+        {/* ═══════════ الملخص التراكمي ═══════════ */}
         <section className="doc-section">
           <h2 className="doc-section-title">
             الملخص التراكمي منذ بداية الاستثمار
             <small>حتى {dateLabel(todayIso())}</small>
           </h2>
           <table>
-            <thead>
-              <tr>
-                <th>البيان</th>
-                <th className="num">القيمة</th>
-                <th>البيان</th>
-                <th className="num">القيمة</th>
-              </tr>
-            </thead>
             <tbody>
               <tr>
                 <td>إجمالي المبالغ المستثمرة</td>
@@ -284,51 +237,32 @@ export function ReportDoc({ report, settings }: { report: PeriodReport; settings
                 <td className="num">{money(report.lifetime.totalProfit, sym)}</td>
               </tr>
               <tr>
-                <td>إجمالي المسحوب من رأس المال</td>
-                <td className="num">{money(report.lifetime.totalWithdrawn, sym)}</td>
+                <td>رأس المال القائم حالياً</td>
+                <td className="num">{money(report.lifetime.currentCapital, sym)}</td>
                 <td>الأرباح المصروفة</td>
                 <td className="num">{money(report.lifetime.paidProfit, sym)}</td>
               </tr>
               <tr>
-                <td>رأس المال القائم حالياً</td>
-                <td className="num">{money(report.lifetime.currentCapital, sym)}</td>
-                <td>الأرباح المستحقة غير المصروفة</td>
-                <td className="num">{money(report.lifetime.unpaidProfit, sym)}</td>
-              </tr>
-              <tr>
-                <td>عدد الأشهر المسجّلة</td>
-                <td className="num">{report.lifetime.activeMonths}</td>
                 <td>متوسط العائد الشهري</td>
                 <td className="num">{percent(report.lifetime.avgMonthlyPct)}</td>
+                <td>الأرباح المستحقة غير المصروفة</td>
+                <td className="num">{money(report.lifetime.unpaidProfit, sym)}</td>
               </tr>
             </tbody>
             <tfoot>
               <tr>
-                <td>العائد التراكمي على رأس المال القائم</td>
+                <td>العائد التراكمي على رأس المال</td>
                 <td className="num accent">{percent(report.lifetime.lifetimeReturnPct)}</td>
-                <td>القيمة الإجمالية (رأس المال + الأرباح المستحقة)</td>
+                <td>القيمة الإجمالية (رأس المال + المستحق)</td>
                 <td className="num accent">
-                  {money(
-                    report.lifetime.currentCapital + report.lifetime.unpaidProfit,
-                    sym,
-                  )}
+                  {money(report.lifetime.currentCapital + report.lifetime.unpaidProfit, sym)}
                 </td>
               </tr>
             </tfoot>
           </table>
         </section>
 
-        {/* ─────────── المنهجية ─────────── */}
-        <section className="doc-section">
-          <div className="doc-note">
-            <b>منهجية الاحتساب:</b> تُحتسب النسبة الشهرية بقسمة ربح الشهر على رأس المال القائم
-            في نهاية ذلك الشهر. أما نسبة عائد الفترة فتُحتسب بقسمة إجمالي أرباح الفترة على
-            متوسط رأس المال خلال أشهرها، ويُستخرج «العائد السنوي المكافئ» بضرب عائد الفترة في
-            عدد الفترات المماثلة ضمن السنة الواحدة. جميع المبالغ بعملة {s.currency || 'USD'}.
-          </div>
-        </section>
-
-        {/* ─────────── التوقيع ─────────── */}
+        {/* ═══════════ التوقيع ═══════════ */}
         <div className="doc-sign">
           <div className="doc-sign-box">
             <div className="doc-sign-line" />
@@ -348,24 +282,16 @@ export function ReportDoc({ report, settings }: { report: PeriodReport; settings
             <div className="doc-sign-title">المستثمر — استلام وعلم</div>
           </div>
         </div>
-
-        <div className="doc-confid">
-          هذا المستند سري ومخصص للمستثمر المذكور أعلاه فقط، ولا يجوز تداوله أو نسخه دون إذن خطي.
-        </div>
       </div>
 
-      {/* ─────────── التذييل ─────────── */}
+      {/* ═══════════ التذييل ═══════════ */}
       <footer className="doc-footer">
         <div>
           <b>{company}</b>
           {s.address ? ` — ${s.address}` : ''}
         </div>
-        <div className="num">
-          {[s.phone, s.email, s.website].filter(Boolean).join('  |  ')}
-        </div>
-        <div>
-          {PERIOD_NAMES[report.type]} • {report.label}
-        </div>
+        <div className="num">{[s.phone, s.email, s.website].filter(Boolean).join('  |  ')}</div>
+        <div>مستند سري خاص بالمستثمر المذكور</div>
       </footer>
     </article>
   )

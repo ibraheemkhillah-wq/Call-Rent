@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════════
-   تصميم التقارير — مستند A4 فاخر جاهز للتصدير PDF
+   تصميم التقرير — صفحة A4 واحدة، فاخرة ومضغوطة
+   الهوية: كحلي #182B56 + أبيض
    ═══════════════════════════════════════════════════════════ */
 
 .report-shell {
@@ -24,32 +25,40 @@
   --d-line: #dbe1ec;
   --d-cream: #f4f7fc;
 
-  width: 210mm;
-  min-height: 297mm;
+  /*
+   * --page مُعامل تكبير الصفحة. يبقى 1 عادةً؛ وإن طال المحتوى (تقرير
+   * سنوي بـ 12 شهراً) يرفعه المنطق قليلاً فيتّسع المحتوى. النسبة تبقى
+   * A4 دائماً، والتصدير يصغّر المستند كاملاً إلى 210×297مم.
+   */
+  --page: 1;
+  width: calc(210mm * var(--page));
+  height: calc(297mm * var(--page));
   margin: 0 auto;
   background: #fff;
   color: var(--d-ink);
   font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
-  font-size: 11pt;
-  line-height: 1.6;
+  font-size: 9.5pt;
+  line-height: 1.45;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
   position: relative;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .doc + .doc {
   margin-top: 26px;
 }
 
-/* ─────────────── الترويسة ─────────────── */
+/* ─────────────── الترويسة (مضغوطة) ─────────────── */
 
 .doc-header {
   background: linear-gradient(135deg, var(--d-navy) 0%, var(--d-navy-soft) 100%);
   color: #fff;
-  padding: 12mm 15mm 9mm;
+  padding: 7mm 12mm 6mm;
   position: relative;
   overflow: hidden;
+  flex: none;
 }
 
 .doc-header::after {
@@ -57,7 +66,7 @@
   position: absolute;
   inset-block-end: 0;
   inset-inline: 0;
-  height: 4px;
+  height: 3px;
   background: linear-gradient(
     90deg,
     var(--d-accent-light) 0%,
@@ -70,50 +79,41 @@
 .doc-header::before {
   content: '';
   position: absolute;
-  inset-block-start: -90px;
-  inset-inline-start: -60px;
-  width: 300px;
-  height: 300px;
+  inset-block-start: -70px;
+  inset-inline-start: -50px;
+  width: 220px;
+  height: 220px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: inset 0 0 0 28px rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow: inset 0 0 0 22px rgba(255, 255, 255, 0.035);
 }
 
 .doc-header-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 10mm;
   position: relative;
   z-index: 1;
 }
 
-.doc-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* الشعار العريض في ترويسة التقرير */
+/* الشعار العريض */
 .doc-logo-wordmark {
-  width: 45mm;
+  width: 38mm;
   height: auto;
+  flex: none;
   display: block;
 }
 
-/* بديل مربّع حين يرفع المستخدم شعاراً مخصصاً أو لا يوجد شعار */
+/* بديل مربّع حين يرفع المستخدم شعاراً مخصصاً */
 .doc-logo {
-  width: 54px;
-  height: 54px;
+  width: 46px;
+  height: 46px;
   flex: none;
-  border-radius: 11px;
+  border-radius: 9px;
   display: grid;
   place-items: center;
   background: #ffffff;
-  color: var(--d-navy);
-  font-family: 'Amiri', serif;
-  font-size: 22px;
-  font-weight: 700;
   overflow: hidden;
 }
 
@@ -123,75 +123,88 @@
   object-fit: contain;
 }
 
-.doc-company {
-  font-family: 'Amiri', serif;
-  font-size: 21pt;
-  font-weight: 700;
-  line-height: 1.15;
-}
-
-.doc-tagline {
-  font-size: 8.5pt;
-  color: rgba(255, 255, 255, 0.72);
-  letter-spacing: 0.06em;
-}
-
-.doc-meta {
-  text-align: start;
-  font-size: 8.5pt;
-  color: rgba(255, 255, 255, 0.75);
-  line-height: 1.9;
-}
-
-.doc-meta b {
-  color: #ffffff;
-  font-weight: 500;
-}
-
-.doc-title-block {
-  margin-top: 5mm;
-  position: relative;
-  z-index: 1;
+.doc-head-title {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
 }
 
 .doc-kicker {
-  font-size: 8.5pt;
-  letter-spacing: 0.3em;
+  font-size: 7.5pt;
+  letter-spacing: 0.25em;
   color: var(--d-accent-light);
-  margin-bottom: 4px;
+  margin-bottom: 1px;
 }
 
 .doc-title {
   font-family: 'Amiri', serif;
-  font-size: 24pt;
+  font-size: 18pt;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.1;
+  margin: 0;
 }
 
 .doc-subtitle {
-  font-size: 11pt;
-  color: rgba(255, 255, 255, 0.85);
-  margin-top: 5px;
+  font-size: 8.5pt;
+  color: rgba(255, 255, 255, 0.82);
+  margin-top: 2px;
+}
+
+.doc-meta {
+  flex: none;
+  text-align: start;
+  font-size: 7.5pt;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.7;
+  direction: ltr;
+  unicode-bidi: isolate;
 }
 
 /* ─────────────── جسم المستند ─────────────── */
 
 .doc-body {
-  padding: 9mm 15mm 6mm;
+  padding: 5mm 12mm 4mm;
   flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* شريط بيانات المستثمر — سطر واحد بدل بطاقة كاملة */
+.doc-idbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 16px;
+  background: var(--d-cream);
+  border: 1px solid var(--d-line);
+  border-inline-start: 3px solid var(--d-accent);
+  border-radius: 6px;
+  padding: 5px 11px;
+  font-size: 8.5pt;
+  margin-bottom: 4mm;
+}
+
+.doc-idbar b {
+  color: var(--d-muted);
+  font-weight: 400;
 }
 
 .doc-section {
-  margin-bottom: 6mm;
+  margin-bottom: 4mm;
+}
+
+.doc-section:last-of-type {
+  margin-bottom: 0;
 }
 
 .doc-section-title {
   font-family: 'Amiri', serif;
-  font-size: 14pt;
+  font-size: 12pt;
   font-weight: 700;
   color: var(--d-navy);
-  padding-bottom: 4px;
-  margin-bottom: 8px;
+  padding-bottom: 3px;
+  margin: 0 0 6px;
   border-bottom: 2px solid var(--d-accent);
   display: flex;
   align-items: center;
@@ -201,57 +214,43 @@
 
 .doc-section-title small {
   font-family: 'IBM Plex Sans Arabic', sans-serif;
-  font-size: 8.5pt;
+  font-size: 7.5pt;
   font-weight: 400;
   color: var(--d-muted);
-}
-
-/* بطاقة المستثمر */
-.doc-identity {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0 22px;
-  background: var(--d-cream);
-  border: 1px solid var(--d-line);
-  border-inline-start: 4px solid var(--d-accent);
-  border-radius: 8px;
-  padding: 9px 16px;
-}
-
-.doc-kv {
   display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 4px 0;
-  border-bottom: 1px dotted var(--d-line);
-  font-size: 10pt;
+  align-items: center;
+  gap: 3px;
 }
 
-.doc-kv:last-child,
-.doc-kv:nth-last-child(2):nth-child(odd) {
-  border-bottom: none;
+/* مفاتيح الرسم البياني */
+.lg-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  vertical-align: -1px;
 }
 
-.doc-kv .k {
-  color: var(--d-muted);
+.lg-bar {
+  background: var(--d-navy);
 }
 
-.doc-kv .v {
-  font-weight: 600;
-  color: var(--d-navy);
+.lg-line {
+  background: var(--d-accent);
+  border-radius: 50%;
 }
 
 /* بطاقات الأرقام الكبرى */
 .doc-highlights {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 6px;
 }
 
 .doc-hl {
   border: 1px solid var(--d-line);
-  border-radius: 8px;
-  padding: 11px 12px;
+  border-radius: 7px;
+  padding: 7px 10px;
   background: #fff;
   position: relative;
   overflow: hidden;
@@ -274,10 +273,9 @@
 }
 
 .doc-hl .hl-label {
-  font-size: 8pt;
+  font-size: 7.5pt;
   color: var(--d-muted);
-  letter-spacing: 0.02em;
-  margin-bottom: 3px;
+  margin-bottom: 1px;
 }
 
 .doc-hl.feature .hl-label {
@@ -287,13 +285,13 @@
 
 .doc-hl .hl-value {
   font-family: 'Amiri', serif;
-  font-size: 15.5pt;
+  font-size: 14pt;
   font-weight: 700;
   color: var(--d-navy);
   direction: ltr;
   text-align: end;
   unicode-bidi: isolate;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .doc-hl.feature .hl-value {
@@ -301,20 +299,36 @@
 }
 
 .doc-hl .hl-foot {
-  font-size: 7.5pt;
+  font-size: 7pt;
   color: var(--d-muted);
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 .doc-hl.feature .hl-foot {
   color: rgba(255, 255, 255, 0.7);
 }
 
-/* الجداول */
+/* ─────────────── الرسم البياني ─────────────── */
+
+.doc-chart-box {
+  border: 1px solid var(--d-line);
+  border-radius: 7px;
+  background: var(--d-cream);
+  padding: 4px 6px;
+}
+
+.doc-svg-chart {
+  display: block;
+  width: 100%;
+  height: 30mm;
+}
+
+/* ─────────────── الجداول ─────────────── */
+
 .doc table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 9.5pt;
+  font-size: 8.5pt;
   min-width: 0;
 }
 
@@ -322,9 +336,9 @@
   background: var(--d-navy);
   color: #ffffff;
   font-weight: 600;
-  font-size: 9pt;
+  font-size: 8pt;
   text-align: start;
-  padding: 8px 10px;
+  padding: 5px 9px;
   border: none;
   white-space: nowrap;
 }
@@ -332,23 +346,23 @@
 /* المستند دائماً RTL، لذا تُستخدم قيم فيزيائية صريحة —
    الخصائص المنطقية داخل خلايا الجداول تُحسب بشكل مغاير في بعض المتصفحات */
 .doc thead th:first-child {
-  border-top-right-radius: 6px;
+  border-top-right-radius: 5px;
 }
 
 .doc thead th:last-child {
-  border-top-left-radius: 6px;
+  border-top-left-radius: 5px;
 }
 
 .doc tfoot td:first-child {
-  border-bottom-right-radius: 6px;
+  border-bottom-right-radius: 5px;
 }
 
 .doc tfoot td:last-child {
-  border-bottom-left-radius: 6px;
+  border-bottom-left-radius: 5px;
 }
 
 .doc tbody td {
-  padding: 6px 10px;
+  padding: 4px 9px;
   border-bottom: 1px solid var(--d-line);
   color: var(--d-ink);
 }
@@ -362,7 +376,7 @@
 }
 
 .doc tfoot td {
-  padding: 8px 10px;
+  padding: 5px 9px;
   background: var(--d-navy);
   color: #fff;
   font-weight: 700;
@@ -384,9 +398,9 @@
 
 .doc .tag {
   display: inline-block;
-  padding: 1px 8px;
+  padding: 0 7px;
   border-radius: 999px;
-  font-size: 8pt;
+  font-size: 7.5pt;
   border: 1px solid;
 }
 
@@ -408,100 +422,42 @@
   background: #f9fafb;
 }
 
-/* الرسم البياني داخل التقرير */
-.doc-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 6px;
-  height: 29mm;
-  padding: 6px 4px 0;
-  border: 1px solid var(--d-line);
-  border-radius: 8px;
-  background: var(--d-cream);
-}
+/* ─────────────── التوقيع ─────────────── */
 
-.doc-chart-col {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  height: 100%;
-  min-width: 0;
-}
-
-.doc-chart-bar {
-  width: 100%;
-  max-width: 34px;
-  border-radius: 4px 4px 0 0;
-  background: linear-gradient(180deg, var(--d-navy-soft), var(--d-navy));
-  min-height: 2px;
-}
-
-.doc-chart-cap {
-  font-size: 7pt;
-  color: var(--d-muted);
-  white-space: nowrap;
-}
-
-.doc-chart-val {
-  font-size: 7pt;
-  color: var(--d-navy);
-  font-weight: 600;
-  direction: ltr;
-}
-
-/* صندوق الملاحظة/المنهجية */
-.doc-note {
-  background: var(--d-cream);
-  border: 1px solid var(--d-line);
-  border-inline-start: 3px solid var(--d-accent);
-  border-radius: 6px;
-  padding: 9px 13px;
-  font-size: 8.5pt;
-  color: #4b5563;
-  line-height: 1.75;
-}
-
-.doc-note b {
-  color: var(--d-navy);
-}
-
-/* التوقيع */
 .doc-sign {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 30px;
-  margin-top: 7mm;
+  gap: 24px;
+  margin-top: auto;
+  padding-top: 5mm;
 }
 
 .doc-sign-box {
-  min-width: 55mm;
+  min-width: 48mm;
   text-align: center;
 }
 
 .doc-sign-line {
   border-bottom: 1px solid var(--d-navy);
-  height: 14mm;
+  height: 9mm;
 }
 
 .doc-sign-name {
   font-weight: 600;
   color: var(--d-navy);
-  font-size: 10pt;
-  margin-top: 5px;
+  font-size: 9pt;
+  margin-top: 3px;
 }
 
 .doc-sign-title {
-  font-size: 8.5pt;
+  font-size: 7.5pt;
   color: var(--d-muted);
 }
 
 .doc-stamp {
-  width: 30mm;
-  height: 30mm;
+  width: 24mm;
+  height: 24mm;
   border: 2px solid var(--d-accent);
   border-radius: 50%;
   display: grid;
@@ -509,25 +465,27 @@
   text-align: center;
   color: var(--d-navy);
   font-family: 'Amiri', serif;
-  font-size: 8pt;
-  line-height: 1.4;
+  font-size: 7.5pt;
+  line-height: 1.35;
   opacity: 0.75;
   transform: rotate(-8deg);
+  flex: none;
 }
 
-/* التذييل */
+/* ─────────────── التذييل ─────────────── */
+
 .doc-footer {
-  margin-top: auto;
+  flex: none;
   border-top: 3px solid var(--d-accent);
   background: var(--d-navy);
   color: rgba(255, 255, 255, 0.72);
-  padding: 6mm 16mm;
-  font-size: 8pt;
+  padding: 3.5mm 12mm;
+  font-size: 7.5pt;
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: 14px;
   flex-wrap: wrap;
-  line-height: 1.7;
+  line-height: 1.6;
 }
 
 .doc-footer b {
@@ -535,15 +493,7 @@
   font-weight: 600;
 }
 
-.doc-confid {
-  text-align: center;
-  font-size: 7.5pt;
-  color: var(--d-muted);
-  padding: 3mm 16mm 0;
-  letter-spacing: 0.02em;
-}
-
-/* ─────────────── الطباعة ─────────────── */
+/* ─────────────── الطباعة (مسار احتياطي) ─────────────── */
 
 @page {
   size: A4;
@@ -558,7 +508,6 @@
     padding: 0 !important;
   }
 
-  /* إخفاء كل شيء عدا المستند */
   body * {
     visibility: hidden;
   }
@@ -587,7 +536,7 @@
 
   .doc {
     width: 210mm;
-    min-height: 297mm;
+    height: 297mm;
     margin: 0 !important;
     box-shadow: none !important;
     page-break-after: always;
@@ -597,37 +546,6 @@
   .doc:last-child {
     page-break-after: auto;
     break-after: auto;
-  }
-
-  /* الكتل الصغيرة لا تُقسَّم أبداً بين صفحتين */
-  .doc-identity,
-  .doc-highlights,
-  .doc-chart,
-  .doc-note,
-  .doc-sign {
-    page-break-inside: avoid;
-    break-inside: avoid;
-  }
-
-  /* لا ينتهي انقسام الصفحة مباشرة بعد عنوان قسم */
-  .doc-section-title {
-    page-break-after: avoid;
-    break-after: avoid;
-  }
-
-  /* الجداول الطويلة (مثل 12 شهراً في التقرير السنوي) يُسمح بانقسامها،
-     مع بقاء كل صف كاملاً وتكرار رأس الجدول في الصفحة التالية */
-  .doc thead {
-    display: table-header-group;
-  }
-
-  .doc tfoot {
-    display: table-row-group;
-  }
-
-  .doc tr {
-    page-break-inside: avoid;
-    break-inside: avoid;
   }
 
   /* ضمان طباعة الخلفيات والألوان */

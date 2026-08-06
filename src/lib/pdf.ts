@@ -1,0 +1,77 @@
+/**
+ * توليد ملف PDF من داخل التطبيق مباشرة.
+ *
+ * لماذا لا نعتمد على نافذة طباعة المتصفح: فهي تضيف ترويسة وتذييلاً
+ * خاصين بها (رابط الموقع، التاريخ، رقم الصفحة) وتفرض هوامش تقصّ أطراف
+ * المستند — ولا يمكن التحكم بذلك من CSS.
+ *
+ * ولماذا `html-to-image` تحديداً: هي تلتقط العنصر عبر SVG foreignObject،
+ * أي أن المتصفح نفسه هو من يرسم النص — فيبقى تشكيل الحروف العربية
+ * ووصلها واتجاهها سليماً تماماً. المكتبات التي تعيد رسم النص بنفسها
+ * (مثل html2canvas) تكسر وصل الحروف العربية في العناوين والجداول.
+ */
+
+import jsPDF from 'jspdf'
+import { toCanvas } from 'html-to-image'
+
+/** أبعاد A4 بالمليمتر */
+const A4_W = 210
+const A4_H = 297
+
+export async function exportDocsToPdf(nodes: HTMLElement[], filename: string): Promise<void> {
+  if (nodes.length === 0) return
+
+  // انتظار اكتمال تحميل الخطوط حتى لا يُلتقط المستند بخط بديل
+  await document.fonts?.ready
+
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i]
+    const canvas = await toCanvas(node, {
+      pixelRatio: 2, // دقة مضاعفة لوضوح النص عند الطباعة
+      backgroundColor: '#ffffff',
+      width: node.offsetWidth,
+      height: node.offsetHeight,
+      cacheBust: true,
+      /**
+       * المستند معروض على الشاشة بـ margin:0 auto ليتوسّط منطقة المعاينة،
+       * وهذا الهامش كان يُحتسب داخل الالتقاط فتخرج الصفحة مزاحة ومقصوصة
+       * من الجانب. تصفيره هنا يلغي الإزاحة، وإلغاء الظل يمنع خبزه في الصورة.
+       */
+      style: { margin: '0', boxShadow: 'none' },
+    })
+
+    // ملاءمة الصفحة: يُصغَّر المستند إن تجاوز A4 ليبقى في صفحة واحدة
+    const scale = Math.min(A4_W / canvas.width, A4_H / canvas.height)
+    const w = canvas.width * scale
+    const h = canvas.height * scale
+
+    if (i > 0) pdf.addPage()
+    pdf.addImage(
+      canvas.toDataURL('image/jpeg', 0.94),
+      'JPEG',
+      (A4_W - w) / 2,
+      (A4_H - h) / 2,
+      w,
+      h,
+      undefined,
+      'FAST',
+    )
+  }
+
+  // تنزيل يدوي بدل pdf.save() لضمان بقاء اسم الملف العربي كما هو
+  const url = URL.createObjectURL(pdf.output('blob'))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
+/** اسم ملف صالح: يزيل المحارف التي ترفضها أنظمة الملفات */
+export function safeFileName(parts: string[]): string {
+  return `${parts.join('-').replace(/[\\/:*?"<>|]/g, '').trim()}.pdf`
+}

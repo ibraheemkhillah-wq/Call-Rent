@@ -330,3 +330,57 @@ export function portfolioStats(
     monthlySeries,
   }
 }
+
+/* ────────────────────────── سلسلة الأداء للرسم البياني ────────────────────────── */
+
+export interface SeriesPoint {
+  month: MonthKey
+  profit: number
+  capital: number
+  /** نسبة ربح الشهر */
+  pct: number
+  hasEntry: boolean
+  /** هل الشهر ضمن فترة التقرير الحالية */
+  inPeriod: boolean
+}
+
+/**
+ * آخر `count` شهراً منتهية بآخر شهر في فترة التقرير — تُظهر للمستثمر
+ * اتجاه العائد لا لقطة شهر واحد.
+ */
+export function performanceSeries(
+  investor: Investor,
+  allContributions: Contribution[],
+  allProfits: ProfitEntry[],
+  type: PeriodType,
+  year: number,
+  index: number,
+  count = 12,
+): SeriesPoint[] {
+  const periodMonths = monthsOfPeriod(type, year, index)
+  const last = periodMonths[periodMonths.length - 1]
+  const [ly, lm] = last.split('-').map(Number)
+
+  const mine = allContributions.filter((c) => c.investorId === investor.id)
+  const points: SeriesPoint[] = []
+
+  for (let back = count - 1; back >= 0; back--) {
+    const d = new Date(Date.UTC(ly, lm - 1 - back, 1))
+    const month = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
+    const entry = allProfits.find((p) => p.investorId === investor.id && p.month === month)
+    const capital = capitalAtMonthEnd(mine, month)
+    const profit = entry?.amount ?? 0
+    points.push({
+      month,
+      profit,
+      capital,
+      pct: capital > 0 ? (profit / capital) * 100 : 0,
+      hasEntry: Boolean(entry),
+      inPeriod: periodMonths.includes(month),
+    })
+  }
+
+  // تُحذف الأشهر السابقة لأول رأس مال حتى لا يبدأ الرسم بفراغ طويل
+  const firstActive = points.findIndex((p) => p.capital > 0)
+  return firstActive > 0 ? points.slice(firstActive) : points
+}
