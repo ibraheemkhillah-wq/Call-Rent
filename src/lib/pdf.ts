@@ -22,6 +22,69 @@ import { toCanvas } from 'html-to-image'
 const A4_W = 210
 const A4_H = 297
 
+/** يحمّل صورة ويضمن فكّ ترميزها قبل الرسم */
+async function loadImage(src: string): Promise<HTMLImageElement | null> {
+  if (!src) return null
+  try {
+    const img = new Image()
+    img.decoding = 'sync'
+    img.src = src
+    if (typeof img.decode === 'function') await img.decode()
+    else await new Promise((res, rej) => ((img.onload = res), (img.onerror = rej)))
+    return img.naturalWidth > 0 ? img : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * يرسم صور المستند على اللوحة بنفسه بعد الالتقاط.
+ *
+ * ◆ لماذا هذه الخطوة أصلاً:
+ * مكتبة الالتقاط تغلّف المستند داخل SVG ثم ترسمه كصورة. وWebKit
+ * (سفاري على الآيفون) يمنع تحميل الصور المضمّنة داخل SVG يُرسم
+ * كصورة — إجراء أمني عنده — فتخرج الصفحة سليمة النصوص والحدود
+ * والمساحات، لكن بلا شعار ولا توقيع ولا ختم. كروم يسمح بها، ولذلك
+ * لا يظهر الخلل على سطح المكتب.
+ *
+ * الحل ألا نعتمد عليه في هذه النقطة: نقرأ موضع كل صورة ومقاسها من
+ * التخطيط الحقيقي، ونحمّلها ونرسمها على اللوحة مباشرة. الرسم فوق
+ * موضعها نفسه، فإن كان المتصفح قد رسمها أصلاً (كروم) لم يتغيّر شيء.
+ *
+ * وتبقى الصور داخل الالتقاط ولا تُستثنى منه: استثناؤها يحذفها من
+ * النسخة الملتقطة فيُعاد حساب تخطيط الترويسة بدونها وتنزاح العناصر
+ * المجاورة. وجودها يحفظ المساحات، والرسم فوقها يحفظ البكسلات.
+ */
+async function paintImages(canvas: HTMLCanvasElement, node: HTMLElement): Promise<void> {
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  const base = node.getBoundingClientRect()
+  if (base.width === 0 || base.height === 0) return
+  const scaleX = canvas.width / base.width
+  const scaleY = canvas.height / base.height
+
+  for (const el of Array.from(node.querySelectorAll('img'))) {
+    const box = el.getBoundingClientRect()
+    if (box.width === 0 || box.height === 0) continue
+
+    const img = await loadImage(el.currentSrc || el.src)
+    if (!img) continue
+
+    /*
+     * مطابقة object-fit: contain — تُحفظ نسبة الصورة داخل صندوقها
+     * وتُتوسَّط فيه، تماماً كما يفعل المتصفح عند العرض.
+     */
+    const fit = Math.min(box.width / img.naturalWidth, box.height / img.naturalHeight)
+    const w = img.naturalWidth * fit
+    const h = img.naturalHeight * fit
+    const x = box.left - base.left + (box.width - w) / 2
+    const y = box.top - base.top + (box.height - h) / 2
+
+    ctx.drawImage(img, x * scaleX, y * scaleY, w * scaleX, h * scaleY)
+  }
+}
+
 /**
  * يلتقط صفحات التقرير كـ canvas واحد لكل صفحة.
  * هذه هي النقطة الوحيدة التي يُرسم فيها المستند؛ كل ما بعدها
@@ -33,20 +96,22 @@ export async function renderDocCanvases(nodes: HTMLElement[]): Promise<HTMLCanva
 
   const out: HTMLCanvasElement[] = []
   for (const node of nodes) {
-    out.push(
-      await toCanvas(node, {
-        pixelRatio: 2, // دقة مضاعفة لوضوح النص عند الطباعة
-        backgroundColor: '#ffffff',
-        width: node.offsetWidth,
-        height: node.offsetHeight,
-        /**
-         * المستند قد يحمل هامشاً أو ظلاً في التخطيط، وهما يُحتسبان داخل
-         * الالتقاط فتخرج الصفحة مزاحة ومقصوصة من الجانب. تصفيرهما هنا
-         * يضمن التقاط الصفحة وحدها بحوافّها الصحيحة.
-         */
-        style: { margin: '0', boxShadow: 'none' },
-      }),
-    )
+    const canvas = await toCanvas(node, {
+      pixelRatio: 2, // دقة مضاعفة لوضوح النص عند الطباعة
+      backgroundColor: '#ffffff',
+      width: node.offsetWidth,
+      height: node.offsetHeight,
+      /**
+       * المستند قد يحمل هامشاً أو ظلاً في التخطيط، وهما يُحتسبان داخل
+       * الالتقاط فتخرج الصفحة مزاحة ومقصوصة من الجانب. تصفيرهما هنا
+       * يضمن التقاط الصفحة وحدها بحوافّها الصحيحة.
+       */
+      style: { margin: '0', boxShadow: 'none' },
+    })
+
+    // الشعار والتوقيع والختم تُرسم يدوياً — انظر شرح paintImages
+    await paintImages(canvas, node)
+    out.push(canvas)
   }
   return out
 }
