@@ -29,6 +29,19 @@ export default defineConfig({
     },
   },
   plugins: [
+    /**
+     * ملف نصّي صغير يحمل رقم النسخة المنشورة.
+     *
+     * فائدته أنه يُقرأ بنقرة واحدة من المتصفح مباشرة، فيفصل فصلاً
+     * قاطعاً بين «الخادم يقدّم نسخة قديمة» و«الجهاز يعرض نسخة مخزّنة»
+     * — وهما حالتان تبدوان متطابقتين من داخل التطبيق.
+     */
+    {
+      name: 'emit-version-file',
+      generateBundle() {
+        this.emitFile({ type: 'asset', fileName: 'version.txt', source: `${buildId}\n` })
+      },
+    },
     react(),
     VitePWA({
       /**
