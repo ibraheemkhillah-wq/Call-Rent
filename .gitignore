@@ -7,3 +7,4 @@ dist-ssr
 
 # TypeScript build cache
 *.tsbuildinfo
+dist-single
