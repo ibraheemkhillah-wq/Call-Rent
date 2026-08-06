@@ -1,0 +1,19 @@
+/**
+ * إعداد النشر على Cloudflare.
+ *
+ * التطبيق ملفات ثابتة بالكامل (يعمل داخل المتصفح بلا خادم)، لذلك لا
+ * يوجد حقل main ولا كود يعمل على الخادم — مجرد تقديم محتوى مجلد dist.
+ *
+ * not_found_handling = single-page-application: أي مسار غير معروف
+ * يُقدَّم له index.html بدل صفحة خطأ، فلا ينكسر التطبيق إن فُتح على
+ * رابط فرعي أو أعاد المستخدم التحميل داخل التطبيق المثبَّت.
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "call-rent",
+  "compatibility_date": "2025-06-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
