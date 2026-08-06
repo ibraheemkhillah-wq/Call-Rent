@@ -1,10 +1,14 @@
 name: نشر التطبيق على GitHub Pages
 
+# النشر الأساسي صار على Cloudflare Pages؛ هذا المسار احتياطي.
+#
+# ملاحظة مهمة: لا تُضف فروعاً أخرى هنا. مجموعة التزامن «pages» واحدة
+# لكل المستودع، فأي تشغيل من فرع آخر يحجزها ويترك نشرة main واقفة في
+# الطابور — وهو ما عطّل النشر سابقاً.
 on:
   push:
     branches:
       - main
-      - claude/investor-management-app-m2g1mu
   workflow_dispatch:
 
 # الصلاحيات المطلوبة للنشر على GitHub Pages
