@@ -53,6 +53,13 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    # الرفع سريع، لكن خوادم Pages أحياناً تبقى على deployment_in_progress
+    # طويلاً. المهلة الافتراضية للإجراء ١٠ دقائق ثم يُلغي النشرة —
+    # فتُهدر نشرة ناجحة أصلاً. نرفعها إلى ٤٥ دقيقة ليُترك النشر يكتمل.
+    timeout-minutes: 50
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          timeout: 2700000
+          error_count: 20
