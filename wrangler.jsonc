@@ -12,6 +12,8 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "call-rent",
   "compatibility_date": "2025-06-01",
+  // بدونها ينشر المشروع بلا عنوان يُفتح منه («No URLs enabled»)
+  "workers_dev": true,
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application"
