@@ -3,6 +3,31 @@
    الهوية: كحلي #182B56 + أبيض
    ═══════════════════════════════════════════════════════════ */
 
+/*
+ * ═══════════════ مصدر الالتقاط ═══════════════
+ * المستند الحقيقي يُبنى هنا بأبعاده الكاملة (A4) خارج مجال الرؤية.
+ * لا يُخفى بـ display:none لأن الالتقاط يحتاج تخطيطاً محسوباً فعلياً؛
+ * حاوية بمقاس صفر و overflow:hidden تكفي لإخفائه بصرياً مع بقاء
+ * التخطيط سليماً.
+ *
+ * ولماذا خارج الشاشة أصلاً: لأن ما يراه المستخدم في المعاينة صار
+ * صورة مولّدة من هذا المستند نفسه — فتكون المعاينة مطابقة تماماً
+ * للملف المُرسَل، بدل أن تعتمد على رسم المتصفح المباشر الذي كان
+ * يُسقط الصور على Safari في الجوال.
+ */
+.report-source {
+  /* absolute لا fixed: بعض إصدارات Safari تؤجّل تخطيط العناصر الثابتة
+     الخارجة عن الشاشة، والالتقاط يحتاج تخطيطاً جاهزاً */
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  z-index: -1;
+  pointer-events: none;
+}
+
 .report-shell {
   background: var(--report-bd);
   padding: 30px 16px 60px;
@@ -11,6 +36,99 @@
   /* عرض المستند ثابت (A4)؛ على الشاشات الضيقة يُمرَّر داخل حاويته
      حتى لا تتحرك الصفحة كلها أفقياً */
   overflow-x: auto;
+}
+
+/* ─────────────── المعاينة (صورة الملف نفسه) ─────────────── */
+
+.report-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+}
+
+/*
+ * غلاف block حول الصورة: الصورة ليست عنصر flex مباشراً، تجنّباً
+ * لخلل Safari الذي يطوي ارتفاع الصور داخل حاويات flex.
+ */
+.report-preview-page {
+  width: 100%;
+  max-width: 210mm;
+}
+
+.report-preview-page img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 210 / 297;
+  height: auto;
+  background: #fff;
+  border-radius: 3px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  cursor: zoom-in;
+}
+
+/*
+ * خلفية المعاينة رمادية داكنة ليلاً وفاتحة نهاراً، فلا يصلح لون نص
+ * واحد فوقهما — تُعطى الملاحظة خلفية بيضاء شفافة تجعلها مقروءة دائماً.
+ */
+.report-preview-note {
+  color: #16203a;
+  background: rgba(255, 255, 255, 0.86);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 12.5px;
+  text-align: center;
+  margin: 0;
+}
+
+.report-preview-wait {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 210mm;
+  aspect-ratio: 210 / 297;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px dashed rgba(22, 32, 58, 0.3);
+  border-radius: 6px;
+  color: #16203a;
+  font-size: 13px;
+}
+
+/* ─────────────── معاينة بملء الشاشة ─────────────── */
+
+.preview-full {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(6, 11, 24, 0.94);
+  overflow: auto;
+  padding: 60px 12px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.preview-full img {
+  display: block;
+  width: 100%;
+  max-width: 900px;
+  aspect-ratio: 210 / 297;
+  height: auto;
+  background: #fff;
+  border-radius: 3px;
+}
+
+.preview-full-close {
+  position: fixed;
+  inset-block-start: 14px;
+  inset-inline-end: 14px;
+  z-index: 121;
+  /* الخلفية داكنة دائماً هنا، فلا تُترك الألوان للوضع النهاري */
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.24);
 }
 
 .doc {
@@ -447,15 +565,16 @@
   text-align: center;
 }
 
+/* سطر الاعتماد أسفل الاسم، وصورة التوقيع تجلس فوقه مباشرة */
 .doc-sign-line {
   border-bottom: 1px solid var(--d-navy);
   height: 14mm;
+  margin-top: 2mm;
   display: flex;
   align-items: flex-end;
   justify-content: center;
 }
 
-/* صورة التوقيع تجلس فوق السطر مباشرة */
 .doc-sign-img {
   height: 14mm;
   width: 20.3mm; /* 14 × 1.4535 */
@@ -470,7 +589,6 @@
   color: var(--d-navy);
   font-size: 10pt;
   line-height: 1.25;
-  margin-top: 3px;
 }
 
 .doc-sign-name {
@@ -582,10 +700,17 @@
     display: none !important;
   }
 
+  /* المعاينة صورة على الشاشة فقط؛ الطباعة تخرج من المستند الأصلي */
   .report-shell {
-    background: #fff !important;
-    padding: 0 !important;
-    min-height: auto !important;
+    display: none !important;
+  }
+
+  .report-source {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    z-index: auto !important;
   }
 
   .doc {

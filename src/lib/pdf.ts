@@ -1,5 +1,5 @@
 /**
- * توليد ملف PDF من داخل التطبيق مباشرة.
+ * توليد التقرير كصورة ثم كملف PDF — من داخل التطبيق مباشرة.
  *
  * لماذا لا نعتمد على نافذة طباعة المتصفح: فهي تضيف ترويسة وتذييلاً
  * خاصين بها (رابط الموقع، التاريخ، رقم الصفحة) وتفرض هوامش تقصّ أطراف
@@ -9,6 +9,10 @@
  * أي أن المتصفح نفسه هو من يرسم النص — فيبقى تشكيل الحروف العربية
  * ووصلها واتجاهها سليماً تماماً. المكتبات التي تعيد رسم النص بنفسها
  * (مثل html2canvas) تكسر وصل الحروف العربية في العناوين والجداول.
+ *
+ * ◆ مبدأ أساسي: المعاينة داخل التطبيق والملف المُرسَل يخرجان من
+ *   نفس الالتقاط (نفس الـ canvas). ما تراه في المعاينة هو حرفياً
+ *   ما يصل إلى المستثمر — لا فرق ولو بكسل واحد.
  */
 
 import jsPDF from 'jspdf'
@@ -18,12 +22,73 @@ import { toCanvas } from 'html-to-image'
 const A4_W = 210
 const A4_H = 297
 
-/** ينشئ ملف PDF في الذاكرة دون تنزيله */
-export async function buildPdfFile(
-  nodes: HTMLElement[],
+/**
+ * يلتقط صفحات التقرير كـ canvas واحد لكل صفحة.
+ * هذه هي النقطة الوحيدة التي يُرسم فيها المستند؛ كل ما بعدها
+ * (معاينة أو PDF) مشتقّ من نتيجتها.
+ */
+export async function renderDocCanvases(nodes: HTMLElement[]): Promise<HTMLCanvasElement[]> {
+  // انتظار اكتمال تحميل الخطوط حتى لا يُلتقط المستند بخط بديل
+  await document.fonts?.ready
+
+  const out: HTMLCanvasElement[] = []
+  for (const node of nodes) {
+    out.push(
+      await toCanvas(node, {
+        pixelRatio: 2, // دقة مضاعفة لوضوح النص عند الطباعة
+        backgroundColor: '#ffffff',
+        width: node.offsetWidth,
+        height: node.offsetHeight,
+        /**
+         * المستند قد يحمل هامشاً أو ظلاً في التخطيط، وهما يُحتسبان داخل
+         * الالتقاط فتخرج الصفحة مزاحة ومقصوصة من الجانب. تصفيرهما هنا
+         * يضمن التقاط الصفحة وحدها بحوافّها الصحيحة.
+         */
+        style: { margin: '0', boxShadow: 'none' },
+      }),
+    )
+  }
+  return out
+}
+
+/** صور المعاينة — نفس الالتقاط المستخدم في الملف المُرسَل */
+export function canvasesToImages(canvases: HTMLCanvasElement[]): string[] {
+  return canvases.map((c) => c.toDataURL('image/jpeg', 0.94))
+}
+
+/** يجمّع الصفحات الملتقطة في ملف PDF بحجم A4 */
+export function pdfBlobFromCanvases(canvases: HTMLCanvasElement[]): Blob | null {
+  if (canvases.length === 0) return null
+
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+
+  canvases.forEach((canvas, i) => {
+    // ملاءمة الصفحة: يُصغَّر المستند إن تجاوز A4 ليبقى في صفحة واحدة
+    const scale = Math.min(A4_W / canvas.width, A4_H / canvas.height)
+    const w = canvas.width * scale
+    const h = canvas.height * scale
+
+    if (i > 0) pdf.addPage()
+    pdf.addImage(
+      canvas.toDataURL('image/jpeg', 0.94),
+      'JPEG',
+      (A4_W - w) / 2,
+      (A4_H - h) / 2,
+      w,
+      h,
+      undefined,
+      'FAST',
+    )
+  })
+
+  return pdf.output('blob')
+}
+
+export function pdfFileFromCanvases(
+  canvases: HTMLCanvasElement[],
   filename: string,
-): Promise<File | null> {
-  const blob = await renderPdfBlob(nodes)
+): File | null {
+  const blob = pdfBlobFromCanvases(canvases)
   return blob ? new File([blob], filename, { type: 'application/pdf' }) : null
 }
 
@@ -35,10 +100,7 @@ export async function buildPdfFile(
  * تُرجع false إن كان الجهاز لا يدعم مشاركة الملفات، فيتولّى المُنادي
  * التنزيل بدلاً منها.
  */
-export async function sharePdf(nodes: HTMLElement[], filename: string): Promise<boolean> {
-  const file = await buildPdfFile(nodes, filename)
-  if (!file) return false
-
+export async function sharePdfFile(file: File): Promise<boolean> {
   const nav = navigator as Navigator & {
     canShare?: (data: ShareData) => boolean
     share?: (data: ShareData) => Promise<void>
@@ -60,63 +122,16 @@ export async function sharePdf(nodes: HTMLElement[], filename: string): Promise<
   }
 }
 
-export async function exportDocsToPdf(nodes: HTMLElement[], filename: string): Promise<void> {
-  const blob = await renderPdfBlob(nodes)
-  if (!blob) return
-
-  // تنزيل يدوي بدل pdf.save() لضمان بقاء اسم الملف العربي كما هو
-  const url = URL.createObjectURL(blob)
+/** تنزيل ملف PDF يدوياً — لضمان بقاء اسم الملف العربي كما هو */
+export function downloadPdfFile(file: File): void {
+  const url = URL.createObjectURL(file)
   const a = document.createElement('a')
   a.href = url
-  a.download = filename
+  a.download = file.name
   document.body.appendChild(a)
   a.click()
   a.remove()
   URL.revokeObjectURL(url)
-}
-
-async function renderPdfBlob(nodes: HTMLElement[]): Promise<Blob | null> {
-  if (nodes.length === 0) return null
-
-  // انتظار اكتمال تحميل الخطوط حتى لا يُلتقط المستند بخط بديل
-  await document.fonts?.ready
-
-  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i]
-    const canvas = await toCanvas(node, {
-      pixelRatio: 2, // دقة مضاعفة لوضوح النص عند الطباعة
-      backgroundColor: '#ffffff',
-      width: node.offsetWidth,
-      height: node.offsetHeight,
-      /**
-       * المستند معروض على الشاشة بـ margin:0 auto ليتوسّط منطقة المعاينة،
-       * وهذا الهامش كان يُحتسب داخل الالتقاط فتخرج الصفحة مزاحة ومقصوصة
-       * من الجانب. تصفيره هنا يلغي الإزاحة، وإلغاء الظل يمنع خبزه في الصورة.
-       */
-      style: { margin: '0', boxShadow: 'none' },
-    })
-
-    // ملاءمة الصفحة: يُصغَّر المستند إن تجاوز A4 ليبقى في صفحة واحدة
-    const scale = Math.min(A4_W / canvas.width, A4_H / canvas.height)
-    const w = canvas.width * scale
-    const h = canvas.height * scale
-
-    if (i > 0) pdf.addPage()
-    pdf.addImage(
-      canvas.toDataURL('image/jpeg', 0.94),
-      'JPEG',
-      (A4_W - w) / 2,
-      (A4_H - h) / 2,
-      w,
-      h,
-      undefined,
-      'FAST',
-    )
-  }
-
-  return pdf.output('blob')
 }
 
 /**

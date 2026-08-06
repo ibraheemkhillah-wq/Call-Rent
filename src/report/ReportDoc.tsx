@@ -269,13 +269,14 @@ export function ReportDoc({
 
         {/* ═══════════ التوقيع والختم ═══════════ */}
         <div className="doc-sign">
+          {/* الاسم أولاً ثم التوقيع أسفله فوق سطر الاعتماد */}
           <div className="doc-sign-box">
-            <div className="doc-sign-line">
-              <img src={signature} alt="التوقيع" className="doc-sign-img" />
-            </div>
             <div className="doc-sign-org">{company}</div>
             <div className="doc-sign-name">{signer}</div>
             <div className="doc-sign-title">{s.signatureTitle || 'الإدارة'}</div>
+            <div className="doc-sign-line">
+              <img src={signature} alt="التوقيع" className="doc-sign-img" />
+            </div>
           </div>
 
           {/* ختم الاعتماد — الشعار داخل دائرة */}
@@ -285,9 +286,9 @@ export function ReportDoc({
           </div>
 
           <div className="doc-sign-box">
-            <div className="doc-sign-line" />
             <div className="doc-sign-name">{report.investor.name}</div>
             <div className="doc-sign-title">المستثمر — استلام وعلم</div>
+            <div className="doc-sign-line" />
           </div>
         </div>
       </div>

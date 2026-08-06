@@ -168,3 +168,10 @@ export const IconRefresh = ({ className, size = 17 }: P) => (
     <path d="M21 3v6h-6" />
   </svg>
 )
+
+export const IconEye = ({ className, size = 18 }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M2.2 12S5.8 5.5 12 5.5 21.8 12 21.8 12 18.2 18.5 12 18.5 2.2 12 2.2 12Z" />
+    <circle cx="12" cy="12" r="3.1" />
+  </svg>
+)

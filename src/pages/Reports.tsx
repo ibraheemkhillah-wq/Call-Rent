@@ -7,10 +7,17 @@ import {
   periodCount,
   periodLabel,
 } from '../lib/calc'
-import { exportDocsToPdf, safeFileName, sharePdf } from '../lib/pdf'
+import {
+  canvasesToImages,
+  downloadPdfFile,
+  pdfFileFromCanvases,
+  renderDocCanvases,
+  safeFileName,
+  sharePdfFile,
+} from '../lib/pdf'
 import type { PeriodType } from '../types'
 import { Empty, Field } from '../components/ui'
-import { IconDoc, IconDownload, IconShare } from '../components/Icons'
+import { IconClose, IconDoc, IconEye, IconShare } from '../components/Icons'
 import { ReportDoc } from '../report/ReportDoc'
 
 const TYPES: PeriodType[] = ['monthly', 'quarterly', 'semiannual', 'annual']
@@ -57,9 +64,81 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
     [targets, db.contributions, db.profits, type, year, index],
   )
 
-  const shellRef = useRef<HTMLDivElement>(null)
-  const [busy, setBusy] = useState<'' | 'download' | 'share'>('')
+  const sourceRef = useRef<HTMLDivElement>(null)
+  const [busy, setBusy] = useState<'' | 'preview' | 'share'>('')
   const [err, setErr] = useState('')
+
+  /**
+   * ◆ المعاينة والملف المُرسَل مصدرهما واحد.
+   *
+   * المستند يُبنى خارج الشاشة، ثم يُلتقط مرة واحدة إلى canvas لكل صفحة.
+   * من هذا الالتقاط نفسه تُشتقّ صور المعاينة وملف الـ PDF معاً — فما
+   * يظهر أمامك هو حرفياً ما يصل إلى المستثمر.
+   */
+  const canvasesRef = useRef<HTMLCanvasElement[]>([])
+  const [pages, setPages] = useState<string[]>([])
+  const [fullscreen, setFullscreen] = useState(false)
+
+  const fileName = safeFileName([
+    'تقرير',
+    investorId === 'all'
+      ? 'جميع-المستثمرين'
+      : (db.investors.find((i) => i.id === investorId)?.name ?? 'مستثمر'),
+    periodLabel(type, year, index),
+  ])
+
+  /** تجهيز المعاينة تلقائياً بعد كل تغيير في الاختيار أو البيانات */
+  useEffect(() => {
+    let cancelled = false
+    canvasesRef.current = []
+    setPages([])
+    if (reports.length === 0) return
+
+    // مهلة قصيرة: تمنح المستند وقتاً ليستقرّ تخطيطه قبل الالتقاط
+    const timer = window.setTimeout(async () => {
+      const nodes = Array.from(
+        sourceRef.current?.querySelectorAll<HTMLElement>('.doc') ?? [],
+      )
+      if (nodes.length === 0) return
+      try {
+        const canvases = await renderDocCanvases(nodes)
+        if (cancelled) return
+        canvasesRef.current = canvases
+        setPages(canvasesToImages(canvases))
+      } catch (e) {
+        if (!cancelled) setErr(`تعذّر تجهيز المعاينة: ${(e as Error).message}`)
+      }
+    }, 400)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [reports, db.settings])
+
+  /** يُرجع الالتقاط الجاهز، أو ينفّذه فوراً إن لم يكتمل بعد */
+  async function ensureCanvases(): Promise<HTMLCanvasElement[]> {
+    if (canvasesRef.current.length > 0) return canvasesRef.current
+    const nodes = Array.from(sourceRef.current?.querySelectorAll<HTMLElement>('.doc') ?? [])
+    if (nodes.length === 0) return []
+    const canvases = await renderDocCanvases(nodes)
+    canvasesRef.current = canvases
+    setPages(canvasesToImages(canvases))
+    return canvases
+  }
+
+  async function openPreview() {
+    setBusy('preview')
+    setErr('')
+    try {
+      const canvases = await ensureCanvases()
+      if (canvases.length > 0) setFullscreen(true)
+    } catch (e) {
+      setErr(`تعذّر عرض المعاينة: ${(e as Error).message}`)
+    } finally {
+      setBusy('')
+    }
+  }
 
   /**
    * زر الإرسال يظهر دائماً: يحاول مشاركة الملف عبر نظام التشغيل، فإن لم
@@ -67,39 +146,16 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
    * القدرات لأن الفحص يعطي نتائج خاطئة في بعض المتصفحات فيختفي الزر
    * عن مستخدم يحتاجه.
    */
-
-  function currentNodesAndName() {
-    const nodes = Array.from(shellRef.current?.querySelectorAll<HTMLElement>('.doc') ?? [])
-    const who =
-      investorId === 'all'
-        ? 'جميع-المستثمرين'
-        : (db.investors.find((i) => i.id === investorId)?.name ?? 'مستثمر')
-    return { nodes, name: safeFileName(['تقرير', who, periodLabel(type, year, index)]) }
-  }
-
-  async function downloadPdf() {
-    const { nodes, name } = currentNodesAndName()
-    if (nodes.length === 0) return
-    setBusy('download')
-    setErr('')
-    try {
-      await exportDocsToPdf(nodes, name)
-    } catch (e) {
-      setErr(`تعذّر إنشاء الملف: ${(e as Error).message}`)
-    } finally {
-      setBusy('')
-    }
-  }
-
   async function shareReport() {
-    const { nodes, name } = currentNodesAndName()
-    if (nodes.length === 0) return
     setBusy('share')
     setErr('')
     try {
-      const shared = await sharePdf(nodes, name)
+      const canvases = await ensureCanvases()
+      if (canvases.length === 0) return
+      const file = pdfFileFromCanvases(canvases, fileName)
+      if (!file) return
       // إن لم يدعم الجهاز مشاركة الملفات، يُنزَّل الملف بدلاً منها
-      if (!shared) await exportDocsToPdf(nodes, name)
+      if (!(await sharePdfFile(file))) downloadPdfFile(file)
     } catch (e) {
       setErr(`تعذّرت المشاركة: ${(e as Error).message}`)
     } finally {
@@ -132,16 +188,16 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
       <div className="page-head no-print">
         <div>
           <h1>التقارير</h1>
-          <p>اختر المستثمر ونوع الفترة ثم صدّر التقرير بصيغة PDF</p>
+          <p>اختر المستثمر ونوع الفترة ثم عاين التقرير وأرسله بصيغة PDF</p>
         </div>
         <div className="head-actions">
           <button className="btn btn-primary" onClick={shareReport} disabled={Boolean(busy)}>
             <IconShare className="btn-icon" />
             {busy === 'share' ? 'جارٍ التحضير…' : 'إرسال التقرير'}
           </button>
-          <button className="btn" onClick={downloadPdf} disabled={Boolean(busy)}>
-            <IconDownload className="btn-icon" />
-            {busy === 'download' ? 'جارٍ إنشاء الملف…' : 'تحميل PDF'}
+          <button className="btn" onClick={openPreview} disabled={Boolean(busy)}>
+            <IconEye className="btn-icon" />
+            {busy === 'preview' ? 'جارٍ التجهيز…' : 'معاينة'}
           </button>
         </div>
       </div>
@@ -196,17 +252,20 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
             <IconShare className="btn-icon" />
             {busy === 'share' ? 'جارٍ التحضير…' : 'إرسال التقرير'}
           </button>
-          <button className="btn" onClick={downloadPdf} disabled={Boolean(busy)}>
-            <IconDownload className="btn-icon" />
-            {busy === 'download' ? 'جارٍ الإنشاء…' : 'تحميل PDF'}
+          <button className="btn" onClick={openPreview} disabled={Boolean(busy)}>
+            <IconEye className="btn-icon" />
+            {busy === 'preview' ? 'جارٍ التجهيز…' : 'معاينة'}
           </button>
         </div>
 
         <div className="divider" />
         <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-          <strong className="accent">«إرسال التقرير»</strong> ينشئ الملف داخل التطبيق ثم
-          يفتح قائمة المشاركة لتختار واتساب أو البريد مباشرة — صفحة واحدة كاملة لكل
-          مستثمر، تصل للمستثمر كما تراها تماماً بلا هوامش أو روابط أو أرقام صفحات.
+          <strong className="accent">«معاينة»</strong> تفتح التقرير بملء الشاشة كما هو
+          تماماً — الصورة المعروضة مأخوذة من نفس الملف الذي يُرسَل، فما تراه هنا هو ما
+          يصل للمستثمر بالضبط.{' '}
+          <strong className="accent">«إرسال التقرير»</strong> يحوّل المعاينة نفسها إلى
+          ملف PDF ثم يفتح قائمة المشاركة لتختار واتساب أو البريد مباشرة — بلا هوامش أو
+          روابط أو أرقام صفحات.
           {' '}(على الأجهزة التي لا تدعم المشاركة يُنزَّل الملف بدلاً منها.)
           {investorId === 'all' &&
             ' عند اختيار «جميع المستثمرين» يخرج ملف واحد، صفحة مستقلة لكل مستثمر.'}
@@ -223,7 +282,11 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
         )}
       </div>
 
-      <div className="report-shell print-area" ref={shellRef}>
+      {/*
+       * المستند الحقيقي — يُبنى خارج الشاشة ويُلتقط منه كل شيء.
+       * لا تحذفه: هو مصدر المعاينة والملف المُرسَل معاً.
+       */}
+      <div className="report-source print-area" ref={sourceRef} aria-hidden="true">
         {reports.map(({ report, series }) => (
           <ReportDoc
             key={report.investor.id}
@@ -233,6 +296,45 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
           />
         ))}
       </div>
+
+      {/* المعاينة — صور مولّدة من نفس الالتقاط الذي يصنع ملف PDF */}
+      <div className="report-shell no-print">
+        <div className="report-preview">
+          {pages.length === 0 ? (
+            <div className="report-preview-wait">جارٍ تجهيز معاينة التقرير…</div>
+          ) : (
+            <>
+              {pages.map((src, i) => (
+                <div className="report-preview-page" key={i}>
+                  <img
+                    src={src}
+                    alt={`معاينة التقرير — صفحة ${i + 1}`}
+                    onClick={() => setFullscreen(true)}
+                  />
+                </div>
+              ))}
+              <p className="report-preview-note">
+                هذه صورة الملف المُرسَل نفسه — اضغط عليها لعرضها بملء الشاشة.
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+
+      {fullscreen && pages.length > 0 && (
+        <div className="preview-full" onClick={() => setFullscreen(false)}>
+          <button
+            className="icon-btn preview-full-close"
+            onClick={() => setFullscreen(false)}
+            aria-label="إغلاق المعاينة"
+          >
+            <IconClose />
+          </button>
+          {pages.map((src, i) => (
+            <img key={i} src={src} alt={`التقرير — صفحة ${i + 1}`} />
+          ))}
+        </div>
+      )}
     </>
   )
 }
