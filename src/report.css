@@ -50,6 +50,17 @@
   margin-top: 26px;
 }
 
+/*
+ * كل صور المستند تُعطى أبعاداً صريحة ولا تُترك لـ height: auto داخل
+ * حاويات flex. السبب: Safari (iOS) يطوي ارتفاع الصورة إلى صفر في هذه
+ * الحالة فتختفي من المعاينة — بينما تظهر في ملف PDF لأن الالتقاط يعيد
+ * حساب التخطيط. الأبعاد الصريحة تجعل المعاينة مطابقة للملف المُرسَل.
+ */
+.doc img {
+  flex: none;
+  object-fit: contain;
+}
+
 /* ─────────────── الترويسة (مضغوطة) ─────────────── */
 
 .doc-header {
@@ -100,8 +111,7 @@
 /* الشعار العريض */
 .doc-logo-wordmark {
   width: 38mm;
-  height: auto;
-  flex: none;
+  height: 14.6mm; /* 38 ÷ 2.596 — ارتفاع صريح لا auto */
   display: block;
 }
 
@@ -120,7 +130,6 @@
 .doc-logo img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
 }
 
 .doc-head-title {
@@ -448,9 +457,9 @@
 
 /* صورة التوقيع تجلس فوق السطر مباشرة */
 .doc-sign-img {
-  max-height: 14mm;
-  max-width: 46mm;
-  object-fit: contain;
+  height: 14mm;
+  width: 20.3mm; /* 14 × 1.4535 */
+  display: block;
   margin-bottom: -1.5mm;
 }
 
@@ -505,7 +514,7 @@
 
 .doc-stamp-logo {
   width: 15mm;
-  height: auto;
+  height: 5.2mm; /* 15 ÷ 2.905 */
   display: block;
 }
 

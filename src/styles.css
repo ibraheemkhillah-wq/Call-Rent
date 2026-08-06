@@ -234,11 +234,14 @@ button {
   border-bottom: 1px solid var(--line);
 }
 
-/* الشعار العريض (wordmark) */
+/* الشعار العريض (wordmark) — بنسبة أبعاد صريحة تفادياً لطيّه في Safari */
 .brand-logo {
   width: 100%;
   max-width: 190px;
+  aspect-ratio: 2.596;
   height: auto;
+  flex: none;
+  object-fit: contain;
   display: block;
 }
 

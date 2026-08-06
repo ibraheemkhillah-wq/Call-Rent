@@ -46,7 +46,12 @@ export async function sharePdf(nodes: HTMLElement[], filename: string): Promise<
   if (!nav.share || !nav.canShare?.({ files: [file] })) return false
 
   try {
-    await nav.share({ files: [file], title: filename.replace(/\.pdf$/, '') })
+    /*
+     * يُرسَل الملف وحده بلا title أو text: إضافتهما تجعل واتساب يحاول
+     * إرسال رسالة نصية مع الملف، وهو ما كان يفشل بالرسالة
+     * «تعذّر إرسال الرسالة». الملف وحده يصل دائماً.
+     */
+    await nav.share({ files: [file] })
     return true
   } catch (err) {
     // إلغاء المستخدم للمشاركة ليس خطأ
@@ -85,7 +90,6 @@ async function renderPdfBlob(nodes: HTMLElement[]): Promise<Blob | null> {
       backgroundColor: '#ffffff',
       width: node.offsetWidth,
       height: node.offsetHeight,
-      cacheBust: true,
       /**
        * المستند معروض على الشاشة بـ margin:0 auto ليتوسّط منطقة المعاينة،
        * وهذا الهامش كان يُحتسب داخل الالتقاط فتخرج الصفحة مزاحة ومقصوصة
@@ -115,7 +119,17 @@ async function renderPdfBlob(nodes: HTMLElement[]): Promise<Blob | null> {
   return pdf.output('blob')
 }
 
-/** اسم ملف صالح: يزيل المحارف التي ترفضها أنظمة الملفات */
+/**
+ * اسم ملف صالح للمشاركة: تُزال المحارف التي ترفضها أنظمة الملفات،
+ * وتُستبدل المسافات بشرطات لأن بعض تطبيقات المراسلة تفشل في إرسال
+ * ملف يحمل مسافات مع نص عربي.
+ */
 export function safeFileName(parts: string[]): string {
-  return `${parts.join('-').replace(/[\\/:*?"<>|]/g, '').trim()}.pdf`
+  const name = parts
+    .join('-')
+    .replace(/[\\/:*?"<>|]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+  return `${name || 'تقرير'}.pdf`
 }
