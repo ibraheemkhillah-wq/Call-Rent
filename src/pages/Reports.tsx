@@ -69,11 +69,14 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
   const [err, setErr] = useState('')
 
   /**
-   * ◆ المعاينة والملف المُرسَل مصدرهما واحد.
+   * ◆ «معاينة» وملف الإرسال مصدرهما التقاط واحد.
    *
-   * المستند يُبنى خارج الشاشة، ثم يُلتقط مرة واحدة إلى canvas لكل صفحة.
-   * من هذا الالتقاط نفسه تُشتقّ صور المعاينة وملف الـ PDF معاً — فما
-   * يظهر أمامك هو حرفياً ما يصل إلى المستثمر.
+   * المستند معروض على الشاشة، ويُلتقط مرة واحدة إلى canvas لكل صفحة؛
+   * من هذا الالتقاط نفسه تُشتقّ صورة المعاينة وملف الـ PDF معاً، فما
+   * تراه في المعاينة هو حرفياً ما يصل إلى المستثمر.
+   *
+   * والمستند يبقى معروضاً ولا يُخفى خارج الشاشة: Safari على الجوال لا
+   * يفكّ ترميز الصور المقصوصة كلياً، فيخرج الالتقاط بلا شعار ولا توقيع.
    */
   const canvasesRef = useRef<HTMLCanvasElement[]>([])
   const [pages, setPages] = useState<string[]>([])
@@ -87,36 +90,13 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
     periodLabel(type, year, index),
   ])
 
-  /** تجهيز المعاينة تلقائياً بعد كل تغيير في الاختيار أو البيانات */
+  /** أي تغيير في الاختيار أو البيانات يُبطل الالتقاط المحفوظ */
   useEffect(() => {
-    let cancelled = false
     canvasesRef.current = []
     setPages([])
-    if (reports.length === 0) return
-
-    // مهلة قصيرة: تمنح المستند وقتاً ليستقرّ تخطيطه قبل الالتقاط
-    const timer = window.setTimeout(async () => {
-      const nodes = Array.from(
-        sourceRef.current?.querySelectorAll<HTMLElement>('.doc') ?? [],
-      )
-      if (nodes.length === 0) return
-      try {
-        const canvases = await renderDocCanvases(nodes)
-        if (cancelled) return
-        canvasesRef.current = canvases
-        setPages(canvasesToImages(canvases))
-      } catch (e) {
-        if (!cancelled) setErr(`تعذّر تجهيز المعاينة: ${(e as Error).message}`)
-      }
-    }, 400)
-
-    return () => {
-      cancelled = true
-      window.clearTimeout(timer)
-    }
   }, [reports, db.settings])
 
-  /** يُرجع الالتقاط الجاهز، أو ينفّذه فوراً إن لم يكتمل بعد */
+  /** يُرجع الالتقاط المحفوظ، أو ينفّذه عند أول حاجة إليه */
   async function ensureCanvases(): Promise<HTMLCanvasElement[]> {
     if (canvasesRef.current.length > 0) return canvasesRef.current
     const nodes = Array.from(sourceRef.current?.querySelectorAll<HTMLElement>('.doc') ?? [])
@@ -283,10 +263,11 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
       </div>
 
       {/*
-       * المستند الحقيقي — يُبنى خارج الشاشة ويُلتقط منه كل شيء.
-       * لا تحذفه: هو مصدر المعاينة والملف المُرسَل معاً.
+       * المستند — معروض على الشاشة، ومنه يُلتقط ملف الـ PDF وصورة
+       * المعاينة معاً. لا تُخفِه خارج الشاشة: Safari على الجوال لا يفكّ
+       * ترميز الصور المقصوصة كلياً فيخرج الالتقاط بلا شعار ولا توقيع.
        */}
-      <div className="report-source print-area" ref={sourceRef} aria-hidden="true">
+      <div className="report-shell print-area" ref={sourceRef}>
         {reports.map(({ report, series }) => (
           <ReportDoc
             key={report.investor.id}
@@ -295,30 +276,6 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
             settings={db.settings}
           />
         ))}
-      </div>
-
-      {/* المعاينة — صور مولّدة من نفس الالتقاط الذي يصنع ملف PDF */}
-      <div className="report-shell no-print">
-        <div className="report-preview">
-          {pages.length === 0 ? (
-            <div className="report-preview-wait">جارٍ تجهيز معاينة التقرير…</div>
-          ) : (
-            <>
-              {pages.map((src, i) => (
-                <div className="report-preview-page" key={i}>
-                  <img
-                    src={src}
-                    alt={`معاينة التقرير — صفحة ${i + 1}`}
-                    onClick={() => setFullscreen(true)}
-                  />
-                </div>
-              ))}
-              <p className="report-preview-note">
-                هذه صورة الملف المُرسَل نفسه — اضغط عليها لعرضها بملء الشاشة.
-              </p>
-            </>
-          )}
-        </div>
       </div>
 
       {fullscreen && pages.length > 0 && (

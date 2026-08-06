@@ -5,29 +5,14 @@
 
 /*
  * ═══════════════ مصدر الالتقاط ═══════════════
- * المستند الحقيقي يُبنى هنا بأبعاده الكاملة (A4) خارج مجال الرؤية.
- * لا يُخفى بـ display:none لأن الالتقاط يحتاج تخطيطاً محسوباً فعلياً؛
- * حاوية بمقاس صفر و overflow:hidden تكفي لإخفائه بصرياً مع بقاء
- * التخطيط سليماً.
+ * المستند يُعرض على الشاشة فعلياً، ومنه يُلتقط ملف الـ PDF.
  *
- * ولماذا خارج الشاشة أصلاً: لأن ما يراه المستخدم في المعاينة صار
- * صورة مولّدة من هذا المستند نفسه — فتكون المعاينة مطابقة تماماً
- * للملف المُرسَل، بدل أن تعتمد على رسم المتصفح المباشر الذي كان
- * يُسقط الصور على Safari في الجوال.
+ * ولا يُخفى أبداً — لا بحاوية مقاسها صفر ولا بـ overflow: hidden.
+ * السبب: Safari على الجوال لا يفكّ ترميز الصور المقصوصة كلياً خارج
+ * مجال الرؤية، فيخرج الالتقاط بلا شعار ولا توقيع ولا ختم، بينما
+ * تظهر النصوص لأنها لا تحتاج فكّ ترميز. عرض المستند على الشاشة هو
+ * ما يضمن جاهزية الصور لحظة الالتقاط.
  */
-.report-source {
-  /* absolute لا fixed: بعض إصدارات Safari تؤجّل تخطيط العناصر الثابتة
-     الخارجة عن الشاشة، والالتقاط يحتاج تخطيطاً جاهزاً */
-  position: absolute;
-  inset-block-start: 0;
-  inset-inline-start: 0;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-  z-index: -1;
-  pointer-events: none;
-}
-
 .report-shell {
   background: var(--report-bd);
   padding: 30px 16px 60px;
@@ -38,64 +23,7 @@
   overflow-x: auto;
 }
 
-/* ─────────────── المعاينة (صورة الملف نفسه) ─────────────── */
-
-.report-preview {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 26px;
-}
-
-/*
- * غلاف block حول الصورة: الصورة ليست عنصر flex مباشراً، تجنّباً
- * لخلل Safari الذي يطوي ارتفاع الصور داخل حاويات flex.
- */
-.report-preview-page {
-  width: 100%;
-  max-width: 210mm;
-}
-
-.report-preview-page img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 210 / 297;
-  height: auto;
-  background: #fff;
-  border-radius: 3px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
-  cursor: zoom-in;
-}
-
-/*
- * خلفية المعاينة رمادية داكنة ليلاً وفاتحة نهاراً، فلا يصلح لون نص
- * واحد فوقهما — تُعطى الملاحظة خلفية بيضاء شفافة تجعلها مقروءة دائماً.
- */
-.report-preview-note {
-  color: #16203a;
-  background: rgba(255, 255, 255, 0.86);
-  border-radius: 999px;
-  padding: 5px 14px;
-  font-size: 12.5px;
-  text-align: center;
-  margin: 0;
-}
-
-.report-preview-wait {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  max-width: 210mm;
-  aspect-ratio: 210 / 297;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px dashed rgba(22, 32, 58, 0.3);
-  border-radius: 6px;
-  color: #16203a;
-  font-size: 13px;
-}
-
-/* ─────────────── معاينة بملء الشاشة ─────────────── */
+/* ─────────────── معاينة بملء الشاشة (صورة الملف نفسه) ─────────────── */
 
 .preview-full {
   position: fixed;
@@ -700,17 +628,10 @@
     display: none !important;
   }
 
-  /* المعاينة صورة على الشاشة فقط؛ الطباعة تخرج من المستند الأصلي */
   .report-shell {
-    display: none !important;
-  }
-
-  .report-source {
-    position: static !important;
-    width: auto !important;
-    height: auto !important;
-    overflow: visible !important;
-    z-index: auto !important;
+    background: #fff !important;
+    padding: 0 !important;
+    min-height: auto !important;
   }
 
   .doc {
