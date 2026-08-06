@@ -10,6 +10,7 @@ import {
 import {
   canvasesToImages,
   downloadPdfFile,
+  fileObjectUrl,
   pdfFileFromCanvases,
   renderDocCanvases,
   safeFileName,
@@ -83,6 +84,17 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
   const [pages, setPages] = useState<string[]>([])
   const [fullscreen, setFullscreen] = useState(false)
 
+  /**
+   * ملف التقرير يُحضَّر مسبقاً، لا عند الضغط على «إرسال».
+   *
+   * السبب: المتصفح لا يفتح قائمة المشاركة إلا إذا اعتبر النداء ناتجاً
+   * مباشرةً عن ضغطة المستخدم، وهذه الصفة تسقط إن طال العمل بينهما —
+   * وتحضير التقرير يستغرق ثواني. فكان الزر لا يفعل شيئاً على الجوال.
+   * بتحضيره مقدماً تصير المشاركة أول ما يحدث بعد الضغط.
+   */
+  const fileRef = useRef<File | null>(null)
+  const [manualUrl, setManualUrl] = useState('')
+
   const fileName = safeFileName([
     'تقرير',
     investorId === 'all'
@@ -91,10 +103,15 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
     periodLabel(type, year, index),
   ])
 
-  /** أي تغيير في الاختيار أو البيانات يُبطل الالتقاط المحفوظ */
+  /** أي تغيير في الاختيار أو البيانات يُبطل ما حُضِّر سابقاً */
   useEffect(() => {
     canvasesRef.current = []
+    fileRef.current = null
     setPages([])
+    setManualUrl((url) => {
+      if (url) URL.revokeObjectURL(url)
+      return ''
+    })
   }, [reports, db.settings])
 
   /** يُرجع الالتقاط المحفوظ، أو ينفّذه عند أول حاجة إليه */
@@ -107,6 +124,33 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
     setPages(canvasesToImages(canvases))
     return canvases
   }
+
+  /** يُجهّز ملف التقرير ويحتفظ به جاهزاً للمشاركة الفورية */
+  async function ensureFile(): Promise<File | null> {
+    if (fileRef.current) return fileRef.current
+    const canvases = await ensureCanvases()
+    if (canvases.length === 0) return null
+    const file = await pdfFileFromCanvases(canvases, fileName)
+    fileRef.current = file
+    return file
+  }
+
+  /* التحضير المسبق: يبدأ بهدوء بعد استقرار الاختيار */
+  useEffect(() => {
+    if (reports.length === 0) return
+    let cancelled = false
+    const timer = window.setTimeout(() => {
+      ensureFile().catch(() => {
+        /* يُعاد المحاولة عند الضغط، وتُعرض الرسالة حينها */
+      })
+      if (cancelled) return
+    }, 700)
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reports, db.settings])
 
   async function openPreview() {
     setBusy('preview')
@@ -122,23 +166,35 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
   }
 
   /**
-   * زر الإرسال يظهر دائماً: يحاول مشاركة الملف عبر نظام التشغيل، فإن لم
-   * يدعمه الجهاز نزّل الملف بدلاً منه. تجنّبنا إخفاءه بناءً على فحص
-   * القدرات لأن الفحص يعطي نتائج خاطئة في بعض المتصفحات فيختفي الزر
-   * عن مستخدم يحتاجه.
+   * الإرسال: قائمة مشاركة النظام أولاً (واتساب، بريد، أي تطبيق).
+   *
+   * وإن رفضها المتصفح — لأن الصفحة داخل إطار لا يملك إذن المشاركة، أو
+   * لأن التحضير لم يكن جاهزاً فسقطت صفة «ناتج عن ضغطة» — يُنزَّل الملف،
+   * ويُعرض فوق ذلك رابط ظاهر يفتحه المستخدم بنفسه. الضغط على الرابط
+   * ضغطة مباشرة لا يرفضها متصفح، فيبقى طريق واحد مضمون دائماً.
    */
   async function shareReport() {
-    setBusy('share')
     setErr('')
+    setBusy('share')
     try {
-      const canvases = await ensureCanvases()
-      if (canvases.length === 0) return
-      const file = await pdfFileFromCanvases(canvases, fileName)
+      const file = await ensureFile()
       if (!file) return
-      // إن لم يدعم الجهاز مشاركة الملفات، يُنزَّل الملف بدلاً منها
-      if (!(await sharePdfFile(file))) downloadPdfFile(file)
+
+      const outcome = await sharePdfFile(file)
+      if (outcome === 'shared' || outcome === 'cancelled') return
+
+      downloadPdfFile(file)
+      setManualUrl((old) => {
+        if (old) URL.revokeObjectURL(old)
+        return fileObjectUrl(file)
+      })
+      setErr(
+        outcome === 'unsupported'
+          ? 'هذا المتصفح لا يفتح قائمة المشاركة. نُزّل الملف — أو افتحه من الرابط أدناه ثم أرسله من زر المشاركة.'
+          : 'المتصفح لم يسمح بفتح قائمة المشاركة هذه المرة. اضغط الرابط أدناه لفتح الملف ثم أرسله من زر المشاركة.',
+      )
     } catch (e) {
-      setErr(`تعذّرت المشاركة: ${(e as Error).message}`)
+      setErr(`تعذّر تجهيز الملف: ${(e as Error).message}`)
     } finally {
       setBusy('')
     }
@@ -264,6 +320,19 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
         {err && (
           <p className="neg" style={{ margin: '10px 0 0', fontSize: 13 }}>
             {err}
+          </p>
+        )}
+        {manualUrl && (
+          <p style={{ margin: '10px 0 0' }}>
+            <a
+              className="btn btn-primary"
+              href={manualUrl}
+              target="_blank"
+              rel="noreferrer"
+              download={fileName}
+            >
+              فتح ملف التقرير
+            </a>
           </p>
         )}
       </div>

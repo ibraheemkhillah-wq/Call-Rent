@@ -202,12 +202,14 @@ export async function pdfFileFromCanvases(
  * تُرجع false إن كان الجهاز لا يدعم مشاركة الملفات، فيتولّى المُنادي
  * التنزيل بدلاً منها.
  */
-export async function sharePdfFile(file: File): Promise<boolean> {
+export type ShareOutcome = 'shared' | 'cancelled' | 'unsupported' | 'blocked'
+
+export async function sharePdfFile(file: File): Promise<ShareOutcome> {
   const nav = navigator as Navigator & {
     canShare?: (data: ShareData) => boolean
     share?: (data: ShareData) => Promise<void>
   }
-  if (!nav.share || !nav.canShare?.({ files: [file] })) return false
+  if (!nav.share || !nav.canShare?.({ files: [file] })) return 'unsupported'
 
   try {
     /*
@@ -216,12 +218,23 @@ export async function sharePdfFile(file: File): Promise<boolean> {
      * «تعذّر إرسال الرسالة». الملف وحده يصل دائماً.
      */
     await nav.share({ files: [file] })
-    return true
+    return 'shared'
   } catch (err) {
+    const name = (err as Error)?.name
     // إلغاء المستخدم للمشاركة ليس خطأ
-    if ((err as Error)?.name === 'AbortError') return true
-    return false
+    if (name === 'AbortError') return 'cancelled'
+    /*
+     * NotAllowedError تعني أن المتصفح لم يعد يعتبر النداء ناتجاً عن
+     * ضغطة المستخدم — يحدث حين يطول التحضير بين الضغط والمشاركة، أو
+     * حين تُعرض الصفحة داخل إطار لا يملك إذن المشاركة.
+     */
+    return 'blocked'
   }
+}
+
+/** رابط مؤقت للملف — يُفتح أو يُنزَّل يدوياً حين تتعذّر المشاركة */
+export function fileObjectUrl(file: File): string {
+  return URL.createObjectURL(file)
 }
 
 /** تنزيل ملف PDF يدوياً — لضمان بقاء اسم الملف العربي كما هو */
