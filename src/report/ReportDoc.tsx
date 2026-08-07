@@ -39,6 +39,12 @@ export function ReportDoc({
   const s = settings
   const sym = s.currencySymbol || '$'
   const company = (lang === 'ar' ? s.companyNameAr : s.companyName) || s.companyName || s.companyNameAr || t.nav.myCompany
+
+  /*
+   * اسم الشركة في تذييل التقرير يبقى بالإنجليزية دائماً مهما كانت لغة
+   * التقرير: هو الاسم التجاري المسجَّل للشركة، لا نصاً يُترجَم.
+   */
+  const companyLatin = s.companyName || brand.name
   const signer = s.signatureName || brand.signature.name
   const signature = s.signatureImage || signatureImg
   const monthsWithData = report.months.filter((m) => m.hasEntry)
@@ -298,8 +304,9 @@ export function ReportDoc({
 
       {/* ═══════════ التذييل ═══════════ */}
       <footer className="doc-footer">
-        <div>
-          <b>{company}</b>
+        {/* لا يتبع اتجاه المستند: يُعزَل ليُقرأ لاتينياً في العربية أيضاً */}
+        <div dir="ltr" className="doc-footer-brand">
+          <b>{companyLatin}</b>
           {s.address ? ` — ${s.address}` : ''}
         </div>
         <div className="num">{[s.phone, s.email, s.website].filter(Boolean).join('  |  ')}</div>
