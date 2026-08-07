@@ -627,8 +627,22 @@
   overflow: hidden;
 }
 
+/*
+ * ترتيب الأولوية عند ضيق المساحة: اسم الشركة وعنوانها لا يُقصّان
+ * أبداً — هما هوية المستند — وكذلك سطر السرّية. وحدها بيانات التواصل
+ * في الوسط تتقلّص، فهي الأقل أهمية وقد تطول بلا حدّ.
+ */
 .doc-footer > * {
   white-space: nowrap;
+}
+
+.doc-footer-brand,
+.doc-footer > :last-child {
+  flex: 0 0 auto;
+}
+
+.doc-footer-contact {
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

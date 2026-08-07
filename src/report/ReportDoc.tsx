@@ -307,7 +307,9 @@ export function ReportDoc({
           <b>{company}</b>
           {s.address ? ` — ${s.address}` : ''}
         </div>
-        <div className="num">{[s.phone, s.email, s.website].filter(Boolean).join('  |  ')}</div>
+        <div className="num doc-footer-contact">
+          {[s.phone, s.email, s.website].filter(Boolean).join('  |  ')}
+        </div>
         <div>{d.confidential}</div>
       </footer>
     </article>
