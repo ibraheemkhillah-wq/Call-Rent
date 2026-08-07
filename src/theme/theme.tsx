@@ -14,6 +14,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { dict } from '../i18n/current'
 
 /** `system` يتبع إعداد الجهاز ويتغيّر معه مباشرة */
 export type ThemeMode = 'light' | 'dark' | 'system'
@@ -22,10 +23,10 @@ export type ResolvedTheme = 'light' | 'dark'
 
 const STORAGE_KEY = 'call-rent-theme'
 
-export const THEME_LABELS: Record<ThemeMode, string> = {
-  light: 'رؤية نهارية',
-  dark: 'رؤية ليلية',
-  system: 'حسب إعداد الجهاز',
+/** تسميات أوضاع العرض باللغة الحالية — دالة لا ثابت، فاللغة تتغيّر */
+export function themeLabels(): Record<ThemeMode, string> {
+  const s = dict().settings
+  return { light: s.themeLight, dark: s.themeDark, system: s.themeSystem }
 }
 
 function readStored(): ThemeMode {

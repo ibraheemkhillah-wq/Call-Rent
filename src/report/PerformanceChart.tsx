@@ -7,7 +7,7 @@
  */
 
 import type { SeriesPoint } from '../lib/calc'
-import { AR_MONTHS } from '../lib/format'
+import { LANG_DIR, currentLang, dict } from '../i18n/current'
 
 const W = 1000
 const H = 250
@@ -24,8 +24,14 @@ export function PerformanceChart({ points }: { points: SeriesPoint[] }) {
   const step = (W - PAD_X * 2) / points.length
   const barW = Math.min(step * 0.46, 30)
 
-  /** المحور الأفقي معكوس ليتوافق مع اتجاه القراءة من اليمين لليسار */
-  const x = (i: number) => W - PAD_X - step * (i + 0.5)
+  /*
+   * المحور الأفقي يتبع اتجاه القراءة: أقدم شهر عند بداية السطر.
+   * فيُقرأ الزمن من اليمين لليسار في العربية، ومن اليسار لليمين في
+   * الإنجليزية والتركية.
+   */
+  const rtl = LANG_DIR[currentLang()] === 'rtl'
+  const x = (i: number) =>
+    rtl ? W - PAD_X - step * (i + 0.5) : PAD_X + step * (i + 0.5)
   const yPct = (v: number) => PAD_T + plotH - (v / maxPct) * plotH
   const yBar = (v: number) => PAD_T + plotH - (v / maxProfit) * plotH * 0.82
 
@@ -100,7 +106,7 @@ export function PerformanceChart({ points }: { points: SeriesPoint[] }) {
           fill={p.inPeriod ? '#182b56' : '#8a93a6'}
           fontWeight={p.inPeriod ? 600 : 400}
         >
-          {AR_MONTHS[Number(p.month.slice(5)) - 1]}
+          {dict().monthsShort[Number(p.month.slice(5)) - 1]}
         </text>
       ))}
     </svg>

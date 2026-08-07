@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
 import {
-  PERIOD_NAMES,
   buildPeriodReport,
   performanceSeries,
   periodCount,
   periodLabel,
+  periodNames,
 } from '../lib/calc'
 import {
   canvasesToImages,
@@ -21,6 +21,7 @@ import { Empty, Field } from '../components/ui'
 import { IconClose, IconDoc, IconEye, IconShare } from '../components/Icons'
 import { ReportDoc } from '../report/ReportDoc'
 import { BUILD_ID } from '../lib/pwa'
+import { useT } from '../i18n'
 
 const TYPES: PeriodType[] = ['monthly', 'quarterly', 'semiannual', 'annual']
 
@@ -30,6 +31,8 @@ const THIS_MONTH = NOW.getMonth() + 1
 
 export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
   const { db } = useStore()
+  const tr = useT()
+  const r = tr.reports
 
   const [investorId, setInvestorId] = useState<string>(initialInvestorId ?? 'all')
   const [type, setType] = useState<PeriodType>('monthly')
@@ -96,10 +99,10 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
   const [manualUrl, setManualUrl] = useState('')
 
   const fileName = safeFileName([
-    'تقرير',
+    r.fileNamePrefix,
     investorId === 'all'
-      ? 'جميع-المستثمرين'
-      : (db.investors.find((i) => i.id === investorId)?.name ?? 'مستثمر'),
+      ? r.fileNameAll
+      : (db.investors.find((i) => i.id === investorId)?.name ?? r.fileNameFallback),
     periodLabel(type, year, index),
   ])
 
@@ -159,7 +162,7 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
       const canvases = await ensureCanvases()
       if (canvases.length > 0) setFullscreen(true)
     } catch (e) {
-      setErr(`تعذّر عرض المعاينة: ${(e as Error).message}`)
+      setErr(r.previewFailed((e as Error).message))
     } finally {
       setBusy('')
     }
@@ -189,12 +192,10 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
         return fileObjectUrl(file)
       })
       setErr(
-        outcome === 'unsupported'
-          ? 'هذا المتصفح لا يفتح قائمة المشاركة. نُزّل الملف — أو افتحه من الرابط أدناه ثم أرسله من زر المشاركة.'
-          : 'المتصفح لم يسمح بفتح قائمة المشاركة هذه المرة. اضغط الرابط أدناه لفتح الملف ثم أرسله من زر المشاركة.',
+        outcome === 'unsupported' ? r.shareUnsupported : r.shareBlocked,
       )
     } catch (e) {
-      setErr(`تعذّر تجهيز الملف: ${(e as Error).message}`)
+      setErr(r.prepareFailed((e as Error).message))
     } finally {
       setBusy('')
     }
@@ -205,15 +206,15 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
       <>
         <div className="page-head">
           <div>
-            <h1>التقارير</h1>
-            <p>تقارير شهرية وربع سنوية ونصف سنوية وسنوية بصيغة PDF</p>
+            <h1>{r.title}</h1>
+            <p>{r.subtitleEmpty}</p>
           </div>
         </div>
         <div className="card">
           <Empty
             icon={<IconDoc size={26} />}
-            title="لا توجد بيانات لإصدار تقارير"
-            text="أضف مستثمرين وسجّل أرباحهم الشهرية أولاً."
+            title={r.emptyTitle}
+            text={r.emptyText}
           />
         </div>
       </>
@@ -224,31 +225,31 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
     <>
       <div className="page-head no-print">
         <div>
-          <h1>التقارير</h1>
+          <h1>{r.title}</h1>
           <p>
-            اختر المستثمر ونوع الفترة ثم عاين التقرير وأرسله بصيغة PDF
+            {r.subtitle}
             {/* رقم النسخة ظاهر هنا عمداً: يكشف فوراً ما إن كان الجهاز
                 يعرض آخر إصدار أم نسخة قديمة عالقة في ذاكرة التطبيق */}
-            <span className="build-tag">نسخة {BUILD_ID}</span>
+            <span className="build-tag">{r.version(BUILD_ID)}</span>
           </p>
         </div>
         <div className="head-actions">
           <button className="btn btn-primary" onClick={shareReport} disabled={Boolean(busy)}>
             <IconShare className="btn-icon" />
-            {busy === 'share' ? 'جارٍ التحضير…' : 'إرسال التقرير'}
+            {busy === 'share' ? r.preparing : r.send}
           </button>
           <button className="btn" onClick={openPreview} disabled={Boolean(busy)}>
             <IconEye className="btn-icon" />
-            {busy === 'preview' ? 'جارٍ التجهيز…' : 'معاينة'}
+            {busy === 'preview' ? r.previewing : r.preview}
           </button>
         </div>
       </div>
 
       <div className="card no-print" style={{ marginBottom: 22 }}>
         <div className="toolbar" style={{ marginBottom: 0 }}>
-          <Field label="المستثمر">
+          <Field label={r.investor}>
             <select value={investorId} onChange={(e) => setInvestorId(e.target.value)}>
-              <option value="all">جميع المستثمرين ({db.investors.length})</option>
+              <option value="all">{r.allInvestors(db.investors.length)}</option>
               {db.investors.map((i) => (
                 <option key={i.id} value={i.id}>
                   {i.name}
@@ -257,17 +258,17 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
             </select>
           </Field>
 
-          <Field label="نوع التقرير">
+          <Field label={r.type}>
             <select value={type} onChange={(e) => setType(e.target.value as PeriodType)}>
               {TYPES.map((t) => (
                 <option key={t} value={t}>
-                  {PERIOD_NAMES[t]}
+                  {periodNames()[t]}
                 </option>
               ))}
             </select>
           </Field>
 
-          <Field label="السنة">
+          <Field label={r.year}>
             <select value={year} onChange={(e) => setYear(Number(e.target.value))}>
               {years.map((y) => (
                 <option key={y} value={y}>
@@ -278,7 +279,7 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
           </Field>
 
           {type !== 'annual' && (
-            <Field label="الفترة">
+            <Field label={r.period}>
               <select value={index} onChange={(e) => setIndex(Number(e.target.value))}>
                 {Array.from({ length: periodCount(type) }, (_, i) => i + 1).map((i) => (
                   <option key={i} value={i}>
@@ -292,30 +293,21 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
           <div className="spacer" />
           <button className="btn btn-primary" onClick={shareReport} disabled={Boolean(busy)}>
             <IconShare className="btn-icon" />
-            {busy === 'share' ? 'جارٍ التحضير…' : 'إرسال التقرير'}
+            {busy === 'share' ? r.preparing : r.send}
           </button>
           <button className="btn" onClick={openPreview} disabled={Boolean(busy)}>
             <IconEye className="btn-icon" />
-            {busy === 'preview' ? 'جارٍ التجهيز…' : 'معاينة'}
+            {busy === 'preview' ? r.previewing : r.preview}
           </button>
         </div>
 
         <div className="divider" />
         <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-          <strong className="accent">«معاينة»</strong> تفتح التقرير بملء الشاشة كما هو
-          تماماً — الصورة المعروضة مأخوذة من نفس الملف الذي يُرسَل، فما تراه هنا هو ما
-          يصل للمستثمر بالضبط.{' '}
-          <strong className="accent">«إرسال التقرير»</strong> يحوّل المعاينة نفسها إلى
-          ملف PDF ثم يفتح قائمة المشاركة لتختار واتساب أو البريد مباشرة — بلا هوامش أو
-          روابط أو أرقام صفحات.
-          {' '}(على الأجهزة التي لا تدعم المشاركة يُنزَّل الملف بدلاً منها.)
-          {investorId === 'all' &&
-            ' عند اختيار «جميع المستثمرين» يخرج ملف واحد، صفحة مستقلة لكل مستثمر.'}
+          {r.explain1} {r.explain2} {r.explain3}
+          {investorId === 'all' && r.explainAll}
         </p>
         <p className="muted" style={{ margin: '8px 0 0', fontSize: 12.5 }}>
-          ⚠️ <strong>لا تستخدم «مشاركة ← طباعة» من المتصفح</strong> لإرسال التقرير: نافذة
-          الطباعة تضيف رابط الموقع وتاريخاً وأرقام صفحات، وتفرض هوامش تقصّ أطراف التقرير
-          وتقسّمه على عدة صفحات — ولا يمكن إلغاء ذلك من داخل التطبيق.
+          {r.warnPrint}
         </p>
         {err && (
           <p className="neg" style={{ margin: '10px 0 0', fontSize: 13 }}>
@@ -331,7 +323,7 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
               rel="noreferrer"
               download={fileName}
             >
-              فتح ملف التقرير
+              {r.openFile}
             </a>
           </p>
         )}
@@ -358,12 +350,12 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
           <button
             className="icon-btn preview-full-close"
             onClick={() => setFullscreen(false)}
-            aria-label="إغلاق المعاينة"
+            aria-label={r.closePreview}
           >
             <IconClose />
           </button>
           {pages.map((src, i) => (
-            <img key={i} src={src} alt={`التقرير — صفحة ${i + 1}`} />
+            <img key={i} src={src} alt={r.previewPage(i + 1)} />
           ))}
         </div>
       )}

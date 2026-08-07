@@ -398,22 +398,42 @@
   white-space: nowrap;
 }
 
-/* المستند دائماً RTL، لذا تُستخدم قيم فيزيائية صريحة —
-   الخصائص المنطقية داخل خلايا الجداول تُحسب بشكل مغاير في بعض المتصفحات */
-.doc thead th:first-child {
+/*
+ * زوايا الجداول بقيم فيزيائية صريحة لكل اتجاه على حدة: الخصائص
+ * المنطقية داخل خلايا الجداول تُحسب بشكل مغاير في بعض المتصفحات،
+ * فتظهر الزاوية في الطرف الخطأ. القاعدة الأولى للعربية (يمين إلى
+ * يسار)، والثانية للإنجليزية والتركية.
+ */
+.doc[dir='rtl'] thead th:first-child {
   border-top-right-radius: 5px;
 }
 
-.doc thead th:last-child {
+.doc[dir='rtl'] thead th:last-child {
   border-top-left-radius: 5px;
 }
 
-.doc tfoot td:first-child {
+.doc[dir='rtl'] tfoot td:first-child {
   border-bottom-right-radius: 5px;
 }
 
-.doc tfoot td:last-child {
+.doc[dir='rtl'] tfoot td:last-child {
   border-bottom-left-radius: 5px;
+}
+
+.doc[dir='ltr'] thead th:first-child {
+  border-top-left-radius: 5px;
+}
+
+.doc[dir='ltr'] thead th:last-child {
+  border-top-right-radius: 5px;
+}
+
+.doc[dir='ltr'] tfoot td:first-child {
+  border-bottom-left-radius: 5px;
+}
+
+.doc[dir='ltr'] tfoot td:last-child {
+  border-bottom-right-radius: 5px;
 }
 
 .doc tbody td {

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App'
 import { StoreProvider } from './store'
 import { ThemeProvider } from './theme/theme'
+import { LangProvider } from './i18n'
 import { setupAppUpdates } from './lib/pwa'
 import { setupHomeScreenIdentity } from './lib/homescreen'
 import './fonts.css'
@@ -14,11 +15,13 @@ setupHomeScreenIdentity()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ThemeProvider>
-      <StoreProvider>
-        <App />
-      </StoreProvider>
-    </ThemeProvider>
+    <LangProvider>
+      <ThemeProvider>
+        <StoreProvider>
+          <App />
+        </StoreProvider>
+      </ThemeProvider>
+    </LangProvider>
   </StrictMode>,
 )
 

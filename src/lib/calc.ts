@@ -16,7 +16,7 @@ import type {
   PeriodType,
   ProfitEntry,
 } from '../types'
-import { AR_MONTHS } from './format'
+import { dict } from '../i18n/current'
 
 /* ────────────────────────── أدوات الأشهر ────────────────────────── */
 
@@ -61,23 +61,28 @@ export function periodCount(type: PeriodType): number {
 
 /** اسم الفترة بالعربية — مثال: «الربع الثاني 2026» */
 export function periodLabel(type: PeriodType, year: number, index: number): string {
+  const p = dict().periods
   switch (type) {
     case 'monthly':
-      return `${AR_MONTHS[index - 1]} ${year}`
+      return `${dict().months[index - 1]} ${year}`
     case 'quarterly':
-      return `الربع ${['الأول', 'الثاني', 'الثالث', 'الرابع'][index - 1]} ${year}`
+      return p.quarterOf(index, year)
     case 'semiannual':
-      return `النصف ${['الأول', 'الثاني'][index - 1]} ${year}`
+      return p.halfOf(index, year)
     case 'annual':
-      return `السنة المالية ${year}`
+      return p.fiscalYear(year)
   }
 }
 
-export const PERIOD_NAMES: Record<PeriodType, string> = {
-  monthly: 'شهري',
-  quarterly: 'ربع سنوي',
-  semiannual: 'نصف سنوي',
-  annual: 'سنوي',
+/** أسماء أنواع الفترات باللغة الحالية — دالة لا ثابت، فاللغة تتغيّر */
+export function periodNames(): Record<PeriodType, string> {
+  const p = dict().periods
+  return {
+    monthly: p.monthly,
+    quarterly: p.quarterly,
+    semiannual: p.semiannual,
+    annual: p.annual,
+  }
 }
 
 /** معامل التحويل إلى عائد سنوي مكافئ */

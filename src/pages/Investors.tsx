@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '../store'
+import { useT } from '../i18n'
 import { summarizeInvestor } from '../lib/calc'
 import { dateLabel, initials, money, percent, todayIso } from '../lib/format'
 import { Empty, Field, Modal } from '../components/ui'
@@ -18,6 +19,8 @@ const blank = {
 }
 
 export function Investors({ go }: { go: (r: Route) => void }) {
+  const t = useT()
+  const u = t.ui
   const { db, addInvestor, updateInvestor, deleteInvestor, addContribution } = useStore()
   const sym = db.settings.currencySymbol || '$'
 
@@ -70,7 +73,7 @@ export function Investors({ go }: { go: (r: Route) => void }) {
 
   function save() {
     if (!form.name.trim()) {
-      setError('اسم المستثمر مطلوب')
+      setError(t.investors.nameRequired)
       return
     }
     if (editing) {
@@ -84,7 +87,7 @@ export function Investors({ go }: { go: (r: Route) => void }) {
           date: form.joinDate || todayIso(),
           amount,
           type: 'deposit',
-          note: 'الاستثمار الأولي',
+          note: u.invInitialInvestment,
         })
       }
     }
@@ -93,7 +96,7 @@ export function Investors({ go }: { go: (r: Route) => void }) {
 
   function remove(inv: Investor) {
     const ok = window.confirm(
-      `سيتم حذف «${inv.name}» نهائياً مع جميع حركات رأس المال وقيود الأرباح الخاصة به.\n\nهل تريد المتابعة؟`,
+      u.invConfirmDelete(inv.name),
     )
     if (ok) deleteInvestor(inv.id)
   }
@@ -102,13 +105,13 @@ export function Investors({ go }: { go: (r: Route) => void }) {
     <>
       <div className="page-head">
         <div>
-          <h1>المستثمرون</h1>
-          <p>إدارة بيانات المستثمرين ورؤوس أموالهم</p>
+          <h1>{t.investors.title}</h1>
+          <p>{u.invSubtitle}</p>
         </div>
         <div className="head-actions">
           <button className="btn btn-primary" onClick={openNew}>
             <IconPlus className="btn-icon" />
-            إضافة مستثمر
+            {t.investors.add}
           </button>
         </div>
       </div>
@@ -116,11 +119,11 @@ export function Investors({ go }: { go: (r: Route) => void }) {
       {db.investors.length > 0 && (
         <div className="toolbar">
           <div className="field" style={{ minWidth: 300 }}>
-            <label>بحث</label>
+            <label>{t.common.search}</label>
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="ابحث بالاسم أو الهاتف أو رقم الهوية…"
+              placeholder={u.invSearch}
             />
           </div>
         </div>
@@ -130,17 +133,17 @@ export function Investors({ go }: { go: (r: Route) => void }) {
         {rows.length === 0 ? (
           <Empty
             icon={<IconUsers size={26} />}
-            title={query ? 'لا توجد نتائج مطابقة' : 'لا يوجد مستثمرون بعد'}
+            title={query ? u.invNoMatch : t.investors.empty}
             text={
               query
-                ? 'جرّب كلمة بحث أخرى.'
-                : 'ابدأ بإضافة أول مستثمر وتحديد المبلغ الذي استثمره.'
+                ? u.invNoMatchText
+                : u.invEmptyText
             }
             action={
               !query && (
                 <button className="btn btn-primary" onClick={openNew}>
                   <IconPlus className="btn-icon" />
-                  إضافة مستثمر
+                  {t.investors.add}
                 </button>
               )
             }
@@ -150,13 +153,13 @@ export function Investors({ go }: { go: (r: Route) => void }) {
             <table>
               <thead>
                 <tr>
-                  <th>المستثمر</th>
-                  <th>تاريخ الانضمام</th>
-                  <th className="num">إجمالي المستثمر</th>
-                  <th className="num">رأس المال الحالي</th>
-                  <th className="num">الأرباح</th>
-                  <th className="num">العائد</th>
-                  <th>الحالة</th>
+                  <th>{t.profits.investor}</th>
+                  <th>{t.investors.joinDate}</th>
+                  <th className="num">{u.invColTotalInvested}</th>
+                  <th className="num">{u.invColCurrentCapital}</th>
+                  <th className="num">{t.investors.profit}</th>
+                  <th className="num">{t.investors.returnPct}</th>
+                  <th>{t.investors.status}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -185,7 +188,7 @@ export function Investors({ go }: { go: (r: Route) => void }) {
                     <td className="num pos">{percent(s.lifetimeReturnPct)}</td>
                     <td>
                       <span className={s.investor.active ? 'badge badge-success' : 'badge badge-muted'}>
-                        {s.investor.active ? 'نشط' : 'غير نشط'}
+                        {s.investor.active ? t.common.active : t.common.inactive}
                       </span>
                     </td>
                     <td>
@@ -194,18 +197,18 @@ export function Investors({ go }: { go: (r: Route) => void }) {
                           className="btn btn-sm"
                           onClick={() => go({ name: 'investor', id: s.investor.id })}
                         >
-                          التفاصيل
+                          {u.invDetails}
                         </button>
                         <button
                           className="icon-btn"
-                          title="تعديل"
+                          title={t.common.edit}
                           onClick={() => openEdit(s.investor)}
                         >
                           <IconEdit />
                         </button>
                         <button
                           className="icon-btn"
-                          title="حذف"
+                          title={t.common.delete}
                           onClick={() => remove(s.investor)}
                         >
                           <IconTrash />
@@ -222,50 +225,50 @@ export function Investors({ go }: { go: (r: Route) => void }) {
 
       {open && (
         <Modal
-          title={editing ? `تعديل بيانات: ${editing.name}` : 'إضافة مستثمر جديد'}
+          title={editing ? u.invEditTitle(editing.name) : u.invAddTitle}
           onClose={() => setOpen(false)}
           footer={
             <>
               <button className="btn btn-primary" onClick={save}>
-                {editing ? 'حفظ التعديلات' : 'إضافة المستثمر'}
+                {editing ? u.invSaveEdits : u.invAddSubmit}
               </button>
               <button className="btn" onClick={() => setOpen(false)}>
-                إلغاء
+                {t.common.cancel}
               </button>
               {error && <span className="neg">{error}</span>}
             </>
           }
         >
           <div className="grid grid-2">
-            <Field label="الاسم الكامل *">
+            <Field label={u.invNameLabel}>
               <input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="مثال: أحمد محمد العلي"
+                placeholder={u.invNamePlaceholder}
                 autoFocus
               />
             </Field>
-            <Field label="رقم الهاتف">
+            <Field label={t.investors.phone}>
               <input
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                placeholder="+970 …"
+                placeholder={u.invPhonePlaceholder}
               />
             </Field>
-            <Field label="البريد الإلكتروني">
+            <Field label={t.investors.email}>
               <input
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
             </Field>
-            <Field label="رقم الهوية / جواز السفر">
+            <Field label={t.investors.nationalId}>
               <input
                 value={form.nationalId}
                 onChange={(e) => setForm({ ...form, nationalId: e.target.value })}
               />
             </Field>
-            <Field label="تاريخ الانضمام">
+            <Field label={t.investors.joinDate}>
               <input
                 type="date"
                 value={form.joinDate}
@@ -274,8 +277,8 @@ export function Investors({ go }: { go: (r: Route) => void }) {
             </Field>
             {!editing && (
               <Field
-                label={`مبلغ الاستثمار الأولي (${sym})`}
-                hint="يُسجَّل كإيداع بتاريخ الانضمام — يمكن إضافة إيداعات لاحقة من صفحة المستثمر"
+                label={u.invInitialAmount(sym)}
+                hint={u.invJoinHint}
               >
                 <input
                   type="number"
@@ -290,11 +293,11 @@ export function Investors({ go }: { go: (r: Route) => void }) {
           </div>
 
           <div style={{ marginTop: 14 }}>
-            <Field label="ملاحظات">
+            <Field label={t.investors.notes}>
               <textarea
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                placeholder="أي تفاصيل خاصة بالاتفاقية أو شروط الاستثمار…"
+                placeholder={u.invNotesPlaceholder}
               />
             </Field>
           </div>
@@ -305,7 +308,7 @@ export function Investors({ go }: { go: (r: Route) => void }) {
               checked={form.active}
               onChange={(e) => setForm({ ...form, active: e.target.checked })}
             />
-            حساب نشط
+            {u.invActiveAccount}
           </label>
         </Modal>
       )}

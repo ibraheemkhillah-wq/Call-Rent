@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useStore } from '../store'
+import { useT } from '../i18n'
 import { portfolioStats, summarizeInvestor } from '../lib/calc'
 import { count, initials, money, monthLabel, percent } from '../lib/format'
 import { Empty, Stat } from '../components/ui'
@@ -15,6 +16,8 @@ import type { Route } from '../App'
 
 export function Dashboard({ go }: { go: (r: Route) => void }) {
   const { db } = useStore()
+  const t = useT()
+  const u = t.ui
   const sym = db.settings.currencySymbol || '$'
 
   const stats = useMemo(
@@ -37,19 +40,19 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
       <>
         <div className="page-head">
           <div>
-            <h1>لوحة المعلومات</h1>
-            <p>نظرة شاملة على المحفظة الاستثمارية</p>
+            <h1>{t.dashboard.title}</h1>
+            <p>{u.dashSubtitle}</p>
           </div>
         </div>
         <div className="card">
           <Empty
             icon={<IconUsers size={26} />}
-            title="لنبدأ بإضافة أول مستثمر"
-            text="أضف المستثمرين ومبالغ استثماراتهم، ثم سجّل الأرباح الشهرية، وسيتولى النظام إعداد التقارير."
+            title={u.dashEmptyTitle}
+            text={u.dashEmptyText}
             action={
               <button className="btn btn-primary" onClick={() => go({ name: 'investors' })}>
                 <IconPlus className="btn-icon" />
-                إضافة مستثمر
+                {u.dashAddInvestor}
               </button>
             }
           />
@@ -62,53 +65,53 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
     <>
       <div className="page-head">
         <div>
-          <h1>لوحة المعلومات</h1>
-          <p>نظرة شاملة على المحفظة الاستثمارية</p>
+          <h1>{t.dashboard.title}</h1>
+          <p>{u.dashSubtitle}</p>
         </div>
         <div className="head-actions">
           <button className="btn" onClick={() => go({ name: 'profits' })}>
-            تسجيل أرباح الشهر
+            {u.dashRecordProfits}
           </button>
           <button className="btn btn-primary" onClick={() => go({ name: 'reports' })}>
-            إصدار تقرير
+            {u.dashIssueReport}
           </button>
         </div>
       </div>
 
       <div className="grid grid-4" style={{ marginBottom: 22 }}>
         <Stat
-          label="إجمالي رأس المال"
+          label={t.dashboard.totalCapital}
           value={money(stats.totalCapital, sym)}
-          foot={`موزّع على ${count(stats.activeCount)} مستثمر نشط`}
+          foot={u.dashDistributedTo(count(stats.activeCount))}
           icon={<IconWallet size={16} />}
           highlight
         />
         <Stat
-          label="إجمالي الأرباح الموزّعة"
+          label={u.dashTotalProfitDistributed}
           value={money(stats.totalProfitAllTime, sym)}
-          foot="منذ بداية النشاط"
+          foot={u.dashSinceStart}
           icon={<IconTrend size={16} />}
         />
         <Stat
-          label="متوسط العائد التراكمي"
+          label={u.dashAvgLifetime}
           value={percent(stats.avgReturnPct)}
-          foot="الأرباح ÷ رأس المال"
+          foot={u.dashAvgFoot}
           icon={<IconPercent size={16} />}
         />
         <Stat
-          label="أرباح مستحقة غير مصروفة"
+          label={u.dashUnpaid}
           value={money(stats.unpaidProfit, sym)}
-          foot="بانتظار الصرف"
+          foot={u.dashUnpaidFoot}
           icon={<IconClock size={16} />}
         />
       </div>
 
       <div className="grid grid-2" style={{ marginBottom: 22 }}>
         <div className="card">
-          <div className="card-title">الأرباح الشهرية</div>
-          <div className="card-sub">إجمالي ما وُزّع على المستثمرين — آخر 12 شهراً</div>
+          <div className="card-title">{u.dashMonthlyChart}</div>
+          <div className="card-sub">{u.dashMonthlyChartSub}</div>
           {stats.monthlySeries.length === 0 ? (
-            <p className="muted">لم يتم تسجيل أي أرباح بعد.</p>
+            <p className="muted">{u.dashNoProfits}</p>
           ) : (
             <div className="chart">
               {stats.monthlySeries.map((m) => (
@@ -128,8 +131,8 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
         </div>
 
         <div className="card">
-          <div className="card-title">توزيع رأس المال</div>
-          <div className="card-sub">حصة كل مستثمر من إجمالي المحفظة</div>
+          <div className="card-title">{u.dashCapitalSplit}</div>
+          <div className="card-sub">{u.dashCapitalSplitSub}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {top.slice(0, 6).map((s) => {
               const share =
@@ -153,18 +156,18 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
       </div>
 
       <div className="card">
-        <div className="card-title">المستثمرون</div>
-        <div className="card-sub">ملخص أداء كل مستثمر حتى تاريخه</div>
+        <div className="card-title">{t.investors.title}</div>
+        <div className="card-sub">{u.dashInvestorsSub}</div>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>المستثمر</th>
-                <th className="num">رأس المال</th>
-                <th className="num">إجمالي الأرباح</th>
-                <th className="num">العائد التراكمي</th>
-                <th className="num">متوسط شهري</th>
-                <th className="num">مستحق</th>
+                <th>{t.profits.investor}</th>
+                <th className="num">{t.profits.capital}</th>
+                <th className="num">{t.investor.lifetimeProfit}</th>
+                <th className="num">{t.investor.lifetimeReturn}</th>
+                <th className="num">{u.dashColAvgMonthly}</th>
+                <th className="num">{t.investor.due}</th>
                 <th></th>
               </tr>
             </thead>
@@ -177,8 +180,8 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
                       <div>
                         <div className="person-name">{s.investor.name}</div>
                         <div className="person-meta">
-                          {s.activeMonths} شهر مسجّل
-                          {!s.investor.active && ' • غير نشط'}
+                          {u.dashMonthsRecorded(s.activeMonths)}
+                          {!s.investor.active && u.dashInactiveSuffix}
                         </div>
                       </div>
                     </div>
@@ -191,7 +194,7 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
                     {s.unpaidProfit > 0 ? (
                       <span className="badge badge-warn">{money(s.unpaidProfit, sym)}</span>
                     ) : (
-                      <span className="badge badge-success">مسدّد</span>
+                      <span className="badge badge-success">{u.dashSettled}</span>
                     )}
                   </td>
                   <td>
@@ -199,7 +202,7 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
                       className="btn btn-sm"
                       onClick={() => go({ name: 'investor', id: s.investor.id })}
                     >
-                      التفاصيل
+                      {u.dashDetails}
                     </button>
                   </td>
                 </tr>

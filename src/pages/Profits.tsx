@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '../store'
+import { useT } from '../i18n'
 import { capitalAtMonthEnd } from '../lib/calc'
 import { currentMonthKey, money, monthLabel, percent } from '../lib/format'
 import { Empty, Field } from '../components/ui'
@@ -7,6 +8,8 @@ import { IconCheck, IconChart, IconUsers } from '../components/Icons'
 import type { Route } from '../App'
 
 export function Profits({ go }: { go: (r: Route) => void }) {
+  const t = useT()
+  const u = t.ui
   const { db, bulkUpsertProfits, setProfitPaid } = useStore()
   const sym = db.settings.currencySymbol || '$'
 
@@ -70,18 +73,18 @@ export function Profits({ go }: { go: (r: Route) => void }) {
       <>
         <div className="page-head">
           <div>
-            <h1>الأرباح الشهرية</h1>
-            <p>تسجيل أرباح جميع المستثمرين لشهر واحد دفعة واحدة</p>
+            <h1>{t.profits.title}</h1>
+            <p>{u.profSubtitle}</p>
           </div>
         </div>
         <div className="card">
           <Empty
             icon={<IconUsers size={26} />}
-            title="لا يوجد مستثمرون نشطون"
-            text="أضف مستثمرين أولاً لتتمكن من تسجيل الأرباح الشهرية."
+            title={u.profNoActive}
+            text={u.profNoActiveText}
             action={
               <button className="btn btn-primary" onClick={() => go({ name: 'investors' })}>
-                إضافة مستثمر
+                {t.investors.add}
               </button>
             }
           />
@@ -94,29 +97,29 @@ export function Profits({ go }: { go: (r: Route) => void }) {
     <>
       <div className="page-head">
         <div>
-          <h1>الأرباح الشهرية</h1>
-          <p>سجّل ربح كل مستثمر لشهر {monthLabel(month)} — والنسب تُحتسب تلقائياً</p>
+          <h1>{t.profits.title}</h1>
+          <p>{u.profSubtitleMonth(monthLabel(month))}</p>
         </div>
         <div className="head-actions">
           <button className="btn btn-primary" onClick={save}>
             {saved ? (
               <>
-                <IconCheck className="btn-icon" /> تم الحفظ
+                <IconCheck className="btn-icon" /> {u.profSaved}
               </>
             ) : (
-              'حفظ أرباح الشهر'
+              u.profSaveMonth
             )}
           </button>
         </div>
       </div>
 
       <div className="toolbar">
-        <Field label="الشهر">
+        <Field label={t.profits.month}>
           <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
         </Field>
         <Field
-          label={`توزيع مبلغ إجمالي (${sym})`}
-          hint="أداة مساعدة: توزّع المبلغ على المستثمرين بنسبة رأس مال كل واحد"
+          label={u.profDistributeLabel(sym)}
+          hint={u.profDistributeHint}
         >
           <input
             type="number"
@@ -129,29 +132,28 @@ export function Profits({ go }: { go: (r: Route) => void }) {
         </Field>
         <button className="btn" onClick={distribute} disabled={!poolAmount}>
           <IconChart className="btn-icon" />
-          وزّع تلقائياً
+          {t.profits.distribute}
         </button>
       </div>
 
       <div className="card">
-        <div className="card-title">جدول الأرباح — {monthLabel(month)}</div>
+        <div className="card-title">{u.profTableTitle(monthLabel(month))}</div>
         <div className="card-sub">
-          إجمالي رأس المال في هذا الشهر: {money(totalCapital, sym)} • المُدخل حالياً:{' '}
-          {money(totalDraft, sym)}
+          {u.profTableSub(money(totalCapital, sym), money(totalDraft, sym))}
         </div>
 
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>المستثمر</th>
-                <th className="num">رأس المال</th>
-                <th className="num">الحصة</th>
+                <th>{t.profits.investor}</th>
+                <th className="num">{t.profits.capital}</th>
+                <th className="num">{u.profColShare}</th>
                 <th className="num" style={{ width: 170 }}>
-                  ربح الشهر ({sym})
+                  {u.profColMonthProfit(sym)}
                 </th>
-                <th className="num">النسبة</th>
-                <th>الصرف</th>
+                <th className="num">{t.profits.pct}</th>
+                <th>{u.profColPayout}</th>
               </tr>
             </thead>
             <tbody>
@@ -164,7 +166,7 @@ export function Profits({ go }: { go: (r: Route) => void }) {
                     <td>
                       <div className="person-name">{r.investor.name}</div>
                       {r.capital <= 0 && (
-                        <div className="person-meta">لا يوجد رأس مال في هذا الشهر</div>
+                        <div className="person-meta">{u.profNoCapital}</div>
                       )}
                     </td>
                     <td className="num">{money(r.capital, sym)}</td>
@@ -191,10 +193,10 @@ export function Profits({ go }: { go: (r: Route) => void }) {
                           style={{ cursor: 'pointer', border: '1px solid' }}
                           onClick={() => setProfitPaid(r.existing!.id, !r.existing!.paid)}
                         >
-                          {r.existing.paid ? 'مصروف' : 'مستحق'}
+                          {r.existing.paid ? t.investor.paid : t.investor.due}
                         </button>
                       ) : (
-                        <span className="badge badge-muted">غير محفوظ</span>
+                        <span className="badge badge-muted">{u.profUnsaved}</span>
                       )}
                     </td>
                   </tr>
@@ -203,7 +205,7 @@ export function Profits({ go }: { go: (r: Route) => void }) {
             </tbody>
             <tfoot>
               <tr>
-                <td>الإجمالي</td>
+                <td>{t.profits.totalRow}</td>
                 <td className="num">{money(totalCapital, sym)}</td>
                 <td className="num">100%</td>
                 <td className="num">{money(totalDraft, sym)}</td>
@@ -220,14 +222,14 @@ export function Profits({ go }: { go: (r: Route) => void }) {
           <button className="btn btn-primary" onClick={save}>
             {saved ? (
               <>
-                <IconCheck className="btn-icon" /> تم الحفظ
+                <IconCheck className="btn-icon" /> {u.profSaved}
               </>
             ) : (
-              'حفظ أرباح الشهر'
+              u.profSaveMonth
             )}
           </button>
           <span className="muted" style={{ fontSize: 13 }}>
-            الحقول الفارغة تُتجاهل. القيم المحفوظة سابقاً لنفس الشهر سيتم تحديثها.
+            {u.profFootNote}
           </span>
         </div>
       </div>

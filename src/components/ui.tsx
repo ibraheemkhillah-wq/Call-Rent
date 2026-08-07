@@ -3,6 +3,7 @@
 import { useEffect, type ReactNode } from 'react'
 import { IconClose, IconMoon, IconSun } from './Icons'
 import { useTheme } from '../theme/theme'
+import { useT } from '../i18n'
 /*
  * تُضمَّن هذه الصور كـ data URI عبر assetsInlineLimit في vite.config.ts،
  * فتصير جزءاً من الصفحة نفسها ولا تحتاج جلباً عند توليد ملف PDF.
@@ -21,6 +22,7 @@ export function Modal({
   children: ReactNode
   footer?: ReactNode
 }) {
+  const t = useT()
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -38,7 +40,7 @@ export function Modal({
       <div className="modal" role="dialog" aria-modal="true" aria-label={title}>
         <div className="modal-head">
           <h2>{title}</h2>
-          <button className="icon-btn" onClick={onClose} aria-label="إغلاق">
+          <button className="icon-btn" onClick={onClose} aria-label={t.common.close}>
             <IconClose />
           </button>
         </div>
@@ -123,9 +125,10 @@ export function LogoMark({
   fallback: string
   className?: string
 }) {
+  const t = useT()
   return (
     <div className={className}>
-      {logoDataUrl ? <img src={logoDataUrl} alt="شعار الشركة" /> : fallback}
+      {logoDataUrl ? <img src={logoDataUrl} alt={t.doc.logoAlt} /> : fallback}
     </div>
   )
 }
@@ -159,13 +162,14 @@ export function Wordmark({
 /** زر تبديل الرؤية النهارية/الليلية */
 export function ThemeToggle() {
   const { theme, toggle } = useTheme()
-  const next = theme === 'dark' ? 'الرؤية النهارية' : 'الرؤية الليلية'
+  const t = useT()
+  const next = theme === 'dark' ? t.theme.toLight : t.theme.toDark
   return (
     <button
       className="theme-toggle"
       onClick={toggle}
-      title={`التبديل إلى ${next}`}
-      aria-label={`التبديل إلى ${next}`}
+      title={t.theme.switchTo(next)}
+      aria-label={t.theme.switchTo(next)}
     >
       {theme === 'dark' ? <IconSun /> : <IconMoon />}
     </button>

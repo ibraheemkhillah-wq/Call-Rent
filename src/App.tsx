@@ -9,6 +9,7 @@ import {
   IconUsers,
 } from './components/Icons'
 import { initials } from './lib/format'
+import { useT } from './i18n'
 import { Dashboard } from './pages/Dashboard'
 import { Investors } from './pages/Investors'
 import { InvestorDetail } from './pages/InvestorDetail'
@@ -24,19 +25,28 @@ export type Route =
   | { name: 'reports'; investorId?: string }
   | { name: 'settings' }
 
-const NAV: { key: Route['name']; label: string; icon: typeof IconDashboard }[] = [
-  { key: 'dashboard', label: 'لوحة المعلومات', icon: IconDashboard },
-  { key: 'investors', label: 'المستثمرون', icon: IconUsers },
-  { key: 'profits', label: 'الأرباح الشهرية', icon: IconChart },
-  { key: 'reports', label: 'التقارير', icon: IconDoc },
-  { key: 'settings', label: 'الإعدادات', icon: IconSettings },
+const NAV: { key: Route['name']; icon: typeof IconDashboard }[] = [
+  { key: 'dashboard', icon: IconDashboard },
+  { key: 'investors', icon: IconUsers },
+  { key: 'profits', icon: IconChart },
+  { key: 'reports', icon: IconDoc },
+  { key: 'settings', icon: IconSettings },
 ]
 
 export default function App() {
   const { db } = useStore()
+  const t = useT()
   const [route, setRoute] = useState<Route>({ name: 'dashboard' })
   const s = db.settings
-  const company = s.companyNameAr || s.companyName || 'شركتي'
+  const company = s.companyNameAr || s.companyName || t.nav.myCompany
+  const navLabel: Record<Route['name'], string> = {
+    dashboard: t.nav.dashboard,
+    investors: t.nav.investors,
+    investor: t.nav.investors,
+    profits: t.nav.profits,
+    reports: t.nav.reports,
+    settings: t.nav.settings,
+  }
 
   const isActive = (key: Route['name']) =>
     route.name === key || (key === 'investors' && route.name === 'investor')
@@ -59,29 +69,27 @@ export default function App() {
             <ThemeToggle />
           </div>
           <div className="brand-text">
-            <span>{s.tagline || 'إدارة المستثمرين والعوائد'}</span>
+            <span>{s.tagline || t.nav.tagline}</span>
           </div>
         </div>
 
         <nav className="nav">
-          <div className="nav-label">القائمة الرئيسية</div>
-          {NAV.map(({ key, label, icon: Icon }) => (
+          <div className="nav-label">{t.nav.section}</div>
+          {NAV.map(({ key, icon: Icon }) => (
             <button
               key={key}
               className={isActive(key) ? 'active' : ''}
               onClick={() => setRoute({ name: key } as Route)}
             >
               <Icon className="nav-icon" />
-              {label}
+              {navLabel[key]}
             </button>
           ))}
         </nav>
 
         <div className="sidebar-foot">
-          <div>
-            {db.investors.length} مستثمر • {db.profits.length} قيد ربح
-          </div>
-          <div>البيانات محفوظة على هذا الجهاز</div>
+          <div>{t.nav.footCount(db.investors.length, db.profits.length)}</div>
+          <div>{t.nav.footNote}</div>
         </div>
       </aside>
 

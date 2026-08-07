@@ -1,19 +1,12 @@
-/** أدوات التنسيق — أرقام لاتينية مع نصوص عربية (المعتاد في المستندات المالية) */
+/**
+ * أدوات التنسيق.
+ *
+ * الأرقام تبقى لاتينية في كل اللغات: هكذا تُكتب في المستندات المالية
+ * العربية، وهو ما يجعل المبالغ مقروءة لمن يستلم التقرير بأي لغة.
+ * أما أسماء الشهور وترتيب التاريخ فيتبعان لغة العرض.
+ */
 
-export const AR_MONTHS = [
-  'يناير',
-  'فبراير',
-  'مارس',
-  'أبريل',
-  'مايو',
-  'يونيو',
-  'يوليو',
-  'أغسطس',
-  'سبتمبر',
-  'أكتوبر',
-  'نوفمبر',
-  'ديسمبر',
-]
+import { currentLang, dict } from '../i18n/current'
 
 const numberFmt = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2,
@@ -39,21 +32,26 @@ export function percent(value: number, digits = 2): string {
   return `${value.toFixed(digits)}%`
 }
 
-/** تحويل YYYY-MM إلى «مارس 2026» */
+/** تحويل YYYY-MM إلى «مارس 2026» / «March 2026» / «Mart 2026» */
 export function monthLabel(monthKey: string): string {
   const [y, m] = monthKey.split('-')
   const idx = Number(m) - 1
   if (idx < 0 || idx > 11) return monthKey
-  return `${AR_MONTHS[idx]} ${y}`
+  return `${dict().months[idx]} ${y}`
 }
 
-/** تحويل YYYY-MM-DD إلى «15 مارس 2026» */
+/**
+ * تحويل YYYY-MM-DD إلى تاريخ مقروء بترتيب اللغة:
+ * «15 مارس 2026» • «March 15, 2026» • «15 Mart 2026»
+ */
 export function dateLabel(iso: string): string {
   if (!iso) return '—'
   const [y, m, d] = iso.split('-')
   const idx = Number(m) - 1
   if (idx < 0 || idx > 11) return iso
-  return `${Number(d)} ${AR_MONTHS[idx]} ${y}`
+  const month = dict().months[idx]
+  const day = Number(d)
+  return currentLang() === 'en' ? `${month} ${day}, ${y}` : `${day} ${month} ${y}`
 }
 
 /** تاريخ اليوم بصيغة YYYY-MM-DD حسب التوقيت المحلي */
@@ -71,7 +69,7 @@ export function currentMonthKey(): string {
 /** الأحرف الأولى من الاسم — للأفاتار */
 export function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return '؟'
+  if (parts.length === 0) return dict().common.unknown
   if (parts.length === 1) return parts[0].slice(0, 2)
   return parts[0][0] + parts[1][0]
 }
