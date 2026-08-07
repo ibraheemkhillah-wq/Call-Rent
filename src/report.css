@@ -614,10 +614,24 @@
   padding: 3.5mm 12mm;
   font-size: 7.5pt;
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 14px;
-  flex-wrap: wrap;
   line-height: 1.6;
+  /*
+   * سطر واحد دائماً: التذييل شريط ختامي، وانكساره إلى سطرين يرفع
+   * ارتفاعه ويقضم من مساحة المحتوى في صفحة محسوبة على المليمتر.
+   * لا التفاف داخل الخانات ولا بينها، ومن فاض يُقصّ بدل أن ينزل سطراً.
+   */
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.doc-footer > * {
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .doc-footer b {
