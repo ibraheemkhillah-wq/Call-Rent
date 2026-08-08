@@ -105,6 +105,118 @@ export function capitalAtMonthEnd(contributions: Contribution[], month: MonthKey
   return capitalAsOf(contributions, endOfMonth(month))
 }
 
+
+/* ────────────────────────── تفصيل الدفعات ────────────────────────── */
+
+/**
+ * دفعة استثمارية واحدة (إيداع) وما خصّها من الأرباح.
+ *
+ * لماذا التوزيع بالتناسب دقيق لا تقريبي: التطبيق يسجّل ربحاً واحداً
+ * لكل مستثمر في الشهر، أي أن كل أمواله تعمل بالمعدّل نفسه في ذلك
+ * الشهر — وإن اختلف المعدّل من شهر لآخر. فحصة كل دفعة من ربح الشهر
+ * هي نسبتها من رأس المال القائم في ذلك الشهر، بالضبط.
+ */
+export interface Tranche {
+  id: string
+  date: string
+  /** المبلغ المودَع أصلاً */
+  amount: number
+  /** المتبقي منه بعد السحوبات */
+  remaining: number
+  /** نصيبها من الأرباح */
+  profit: number
+  /** عائدها = ربحها ÷ مبلغها الأصلي */
+  returnPct: number
+  /** عدد الأشهر التي عملت فيها */
+  months: number
+  /** متوسط عائدها الشهري */
+  avgMonthlyPct: number
+  note: string
+}
+
+/**
+ * يوزّع أرباح المستثمر على دفعاته الاستثمارية.
+ *
+ * السحوبات تُخصم من الأقدم فالأحدث (FIFO) — وهو العرف المحاسبي
+ * المعتاد، ويعني أن المال الذي مكث أطول هو أول ما يخرج.
+ *
+ * `untilMonth` يحدّ الحساب بنهاية شهر معيّن، فلا يحتسب تقرير يوليو
+ * أرباح أغسطس.
+ */
+export function trancheBreakdown(
+  investor: Investor,
+  contributions: Contribution[],
+  profits: ProfitEntry[],
+  untilMonth?: MonthKey,
+): Tranche[] {
+  const mine = contributions
+    .filter((c) => c.investorId === investor.id)
+    .sort((a, b) => a.date.localeCompare(b.date))
+
+  const tranches: (Tranche & { balance: number })[] = mine
+    .filter((c) => c.type === 'deposit')
+    .map((c) => ({
+      id: c.id,
+      date: c.date,
+      amount: c.amount,
+      remaining: c.amount,
+      profit: 0,
+      returnPct: 0,
+      months: 0,
+      avgMonthlyPct: 0,
+      note: c.note,
+      balance: 0,
+    }))
+
+  if (tranches.length === 0) return []
+
+  const myProfits = profits
+    .filter((p) => p.investorId === investor.id)
+    .filter((p) => !untilMonth || p.month <= untilMonth)
+    .sort((a, b) => a.month.localeCompare(b.month))
+
+  /* الأحداث بترتيبها الزمني: كل إيداع يفتح دفعة، وكل سحب يستهلك الأقدم */
+  let next = 0
+  const applyUntil = (isoDate: string) => {
+    while (next < mine.length && mine[next].date <= isoDate) {
+      const c = mine[next++]
+      if (c.type === 'deposit') {
+        const t = tranches.find((x) => x.id === c.id)
+        if (t) t.balance = c.amount
+      } else {
+        let left = c.amount
+        for (const t of tranches) {
+          if (left <= 0) break
+          const take = Math.min(t.balance, left)
+          t.balance -= take
+          left -= take
+        }
+      }
+    }
+  }
+
+  for (const p of myProfits) {
+    applyUntil(endOfMonth(p.month))
+    const total = tranches.reduce((s, t) => s + t.balance, 0)
+    if (total <= 0) continue
+    for (const t of tranches) {
+      if (t.balance <= 0) continue
+      t.profit += p.amount * (t.balance / total)
+      t.months++
+    }
+  }
+
+  // تطبيق ما تبقّى من سحوبات بعد آخر شهر ربح، ليصحّ الرصيد المعروض
+  applyUntil('9999-12-31')
+
+  return tranches.map(({ balance, ...t }) => ({
+    ...t,
+    remaining: balance,
+    returnPct: t.amount > 0 ? (t.profit / t.amount) * 100 : 0,
+    avgMonthlyPct: t.months > 0 && t.amount > 0 ? (t.profit / t.amount) * 100 / t.months : 0,
+  }))
+}
+
 /* ────────────────────────── ملخص المستثمر ────────────────────────── */
 
 export interface InvestorSummary {
@@ -220,6 +332,8 @@ export interface PeriodReport {
   bestMonth: MonthRow | null
   /** ملخص المستثمر التراكمي حتى تاريخه */
   lifetime: InvestorSummary
+  /** تفصيل الدفعات الاستثمارية حتى نهاية الفترة */
+  tranches: Tranche[]
 }
 
 export function buildPeriodReport(
@@ -292,6 +406,16 @@ export function buildPeriodReport(
     annualizedPct: returnPct * annualizeFactor(type),
     bestMonth,
     lifetime: summarizeInvestor(investor, allContributions, allProfits),
+    /*
+     * محسوبة حتى آخر شهر في الفترة فقط: تقرير يوليو لا يحمل أرباح أغسطس.
+     * الدفعات المودَعة بعد نهاية الفترة تُستبعد كي لا يظهر مال لم يعمل بعد.
+     */
+    tranches: trancheBreakdown(
+      investor,
+      allContributions.filter((c) => c.date <= endOfMonth(monthKeys[monthKeys.length - 1])),
+      allProfits,
+      monthKeys[monthKeys.length - 1],
+    ),
   }
 }
 

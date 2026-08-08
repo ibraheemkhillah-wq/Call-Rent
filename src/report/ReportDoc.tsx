@@ -234,6 +234,40 @@ export function ReportDoc({
           </section>
         )}
 
+        {/* ═══════════ تفصيل الدفعات ═══════════ */}
+        {report.tranches.length > 1 && (
+          <section className="doc-section">
+            <h2 className="doc-section-title">
+              {d.tranchesTitle}
+              <small>{d.tranchesSub}</small>
+            </h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>{d.trancheDate}</th>
+                  <th className="num">{d.trancheAmount}</th>
+                  <th className="num">{d.trancheRemaining}</th>
+                  <th className="num">{d.trancheProfit}</th>
+                  <th className="num">{d.trancheReturn}</th>
+                  <th className="num">{d.trancheMonths}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.tranches.map((tr) => (
+                  <tr key={tr.id} className="tranche-row">
+                    <td>{dateLabel(tr.date)}</td>
+                    <td className="num">{money(tr.amount, '')}</td>
+                    <td className="num">{money(tr.remaining, '')}</td>
+                    <td className="num accent">{money(tr.profit, '')}</td>
+                    <td className="num accent">{percent(tr.returnPct)}</td>
+                    <td className="num">{d.trancheMonthsCount(tr.months)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+
         {/* ═══════════ الملخص التراكمي ═══════════ */}
         <section className="doc-section">
           <h2 className="doc-section-title">

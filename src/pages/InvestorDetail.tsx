@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '../store'
 import { useT } from '../i18n'
-import { capitalAtMonthEnd, summarizeInvestor } from '../lib/calc'
+import { capitalAtMonthEnd, summarizeInvestor, trancheBreakdown } from '../lib/calc'
 import {
   currentMonthKey,
   dateLabel,
@@ -28,6 +28,7 @@ import type { Route } from '../App'
 export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void }) {
   const t = useT()
   const u = t.ui
+  const dc = t.doc
   const {
     db,
     addContribution,
@@ -74,6 +75,12 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
 
   const summary = useMemo(
     () => (investor ? summarizeInvestor(investor, db.contributions, db.profits) : null),
+    [investor, db.contributions, db.profits],
+  )
+
+  /** نصيب كل دفعة استثمارية من الأرباح — يظهر حين تتعدّد الدفعات */
+  const tranches = useMemo(
+    () => (investor ? trancheBreakdown(investor, db.contributions, db.profits) : []),
     [investor, db.contributions, db.profits],
   )
 
@@ -287,6 +294,64 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
           </div>
         )}
       </div>
+
+      {/* ─────────── تفصيل الدفعات ─────────── */}
+      {tranches.length > 1 && (
+        <div className="card">
+          <div>
+            <div className="card-title">{dc.tranchesTitle}</div>
+            <div className="card-sub">{dc.tranchesSub}</div>
+          </div>
+
+          {/*
+           * ستة أعمدة لا تتّسع في عرض الجوال، والربح والعائد هما المقصود من
+           * الجدول فلا يجوز أن يختفيا خلف تمرير أفقي. تحت 780px يتحوّل كل صف
+           * إلى بطاقة مستقلة، وعناوين الأعمدة تُنقَل إلى كل خانة عبر data-label.
+           */}
+          <div className="table-wrap">
+            <table className="tranche-table">
+              <thead>
+                <tr>
+                  <th>{dc.trancheDate}</th>
+                  <th className="num">{dc.trancheAmount}</th>
+                  <th className="num">{dc.trancheRemaining}</th>
+                  <th className="num">{dc.trancheProfit}</th>
+                  <th className="num">{dc.trancheReturn}</th>
+                  <th className="num">{dc.trancheMonths}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tranches.map((tr) => (
+                  <tr key={tr.id} className="tranche-row">
+                    <td className="tranche-head" data-label={dc.trancheDate}>
+                      {dateLabel(tr.date)}
+                    </td>
+                    <td className="num" data-label={dc.trancheAmount}>
+                      {money(tr.amount, sym)}
+                    </td>
+                    <td className="num" data-label={dc.trancheRemaining}>
+                      {money(tr.remaining, sym)}
+                    </td>
+                    <td className="num accent" data-label={dc.trancheProfit}>
+                      {money(tr.profit, sym)}
+                    </td>
+                    <td className="num pos" data-label={dc.trancheReturn}>
+                      {percent(tr.returnPct)}
+                    </td>
+                    <td className="num" data-label={dc.trancheMonths}>
+                      {dc.trancheMonthsCount(tr.months)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="hint" style={{ marginTop: 10 }}>
+            {dc.tranchesNote}
+          </p>
+        </div>
+      )}
 
       {/* ─────────── حركات رأس المال ─────────── */}
       <div className="card">
