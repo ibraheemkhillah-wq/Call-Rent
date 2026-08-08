@@ -4,6 +4,7 @@ import { useT } from '../i18n'
 import { summarizeInvestor } from '../lib/calc'
 import { dateLabel, initials, money, percent, todayIso } from '../lib/format'
 import { Empty, Field, Modal } from '../components/ui'
+import { AddInvestment } from '../components/AddInvestment'
 import { IconEdit, IconPlus, IconTrash, IconUsers } from '../components/Icons'
 import type { Investor } from '../types'
 import type { Route } from '../App'
@@ -31,6 +32,7 @@ export function Investors({ go }: { go: (r: Route) => void }) {
   const [initialAmount, setInitialAmount] = useState('')
   const [query, setQuery] = useState('')
   const [error, setError] = useState('')
+  const [adding, setAdding] = useState(false)
 
   const rows = useMemo(() => {
     const list = db.investors.map((i) => summarizeInvestor(i, db.contributions, db.profits))
@@ -109,8 +111,11 @@ export function Investors({ go }: { go: (r: Route) => void }) {
           <p>{u.invSubtitle}</p>
         </div>
         <div className="head-actions">
-          <button className="btn btn-primary" onClick={openNew}>
+          <button className="btn btn-primary" onClick={() => setAdding(true)}>
             <IconPlus className="btn-icon" />
+            {t.invest.open}
+          </button>
+          <button className="btn" onClick={openNew}>
             {t.investors.add}
           </button>
         </div>
@@ -141,9 +146,9 @@ export function Investors({ go }: { go: (r: Route) => void }) {
             }
             action={
               !query && (
-                <button className="btn btn-primary" onClick={openNew}>
+                <button className="btn btn-primary" onClick={() => setAdding(true)}>
                   <IconPlus className="btn-icon" />
-                  {t.investors.add}
+                  {t.invest.open}
                 </button>
               )
             }
@@ -311,6 +316,13 @@ export function Investors({ go }: { go: (r: Route) => void }) {
             {u.invActiveAccount}
           </label>
         </Modal>
+      )}
+
+      {adding && (
+        <AddInvestment
+          onClose={() => setAdding(false)}
+          onOpenInvestor={(id) => go({ name: 'investor', id })}
+        />
       )}
     </>
   )
