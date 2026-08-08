@@ -18,7 +18,8 @@ import type {
   Settings,
 } from './types'
 import { brand } from './theme/brand'
-import { todayIso } from './lib/format'
+import { dict } from './i18n/current'
+import { money, todayIso } from './lib/format'
 
 const STORAGE_KEY = 'call-rent-investors-db-v1'
 const DB_VERSION = 1
@@ -50,6 +51,26 @@ const emptyDb: Database = {
 
 function newId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`
+}
+
+/** «2026-03» → «مارس 2026» — للسطر الوصفي في قائمة المعلّق */
+function monthText(month: MonthKey): string {
+  const [y, m] = month.split('-')
+  const idx = Number(m) - 1
+  return idx >= 0 && idx < 12 ? `${dict().months[idx]} ${y}` : month
+}
+
+/** «2026-03-10» → «10 مارس 2026» */
+function dateText(iso: string): string {
+  const [y, m, d] = iso.split('-')
+  const idx = Number(m) - 1
+  return idx >= 0 && idx < 12 ? `${Number(d)} ${dict().months[idx]} ${y}` : iso
+}
+
+/** اسم حقل الإعدادات كما يظهر للمستخدم */
+function settingLabel(field: string): string {
+  const f = dict().pending.fields as Record<string, string>
+  return f[field] ?? field
 }
 
 /**
@@ -88,8 +109,16 @@ function loadDb(): Database {
   }
 }
 
+/** وصف تعديل معلّق — المفتاح يدمج التعديلات المتتابعة على الشيء نفسه */
+export interface PendingItem {
+  key: string
+  label: string
+}
+
 interface StoreValue {
   db: Database
+  /** التعديلات المعلّقة بترتيب حدوثها */
+  pendingLog: PendingItem[]
   /** عدد التعديلات المعلّقة التي لم تُحفظ بعد */
   pendingCount: number
   /** يثبّت التعديلات المعلّقة في التخزين */
@@ -132,9 +161,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    */
   const [committed, setCommitted] = useState<Database>(() => loadDb())
   const [staged, setStaged] = useState<Database | null>(null)
-  const [pendingCount, setPendingCount] = useState(0)
+  const [pendingLog, setPendingLog] = useState<PendingItem[]>([])
 
   const db = staged ?? committed
+  const pendingCount = pendingLog.length
 
   useEffect(() => {
     try {
@@ -155,121 +185,206 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('beforeunload', warn)
   }, [pendingCount])
 
-  /** تعديل يُثبَّت فوراً — ويُطبَّق على نسخة العمل أيضاً إن وُجدت */
-  const commitNow = useCallback((fn: (d: Database) => Database) => {
-    setCommitted(fn)
-    setStaged((s) => (s ? fn(s) : null))
-  }, [])
+  /**
+   * كل تعديل يُعلَّق حتى يُحفظ صراحةً.
+   *
+   * التعديلات المتتابعة على الشيء نفسه — كالكتابة حرفاً حرفاً في حقل
+   * واحد — تحمل المفتاح نفسه فتُدمج في سطر واحد، وإلا امتلأت القائمة
+   * بعشرات السطور لتعديلٍ واحد.
+   */
+  const stage = useCallback(
+    (fn: (d: Database) => Database, item: PendingItem) => {
+      setStaged((s) => fn(s ?? committed))
+      setPendingLog((log) =>
+        log.length > 0 && log[log.length - 1].key === item.key
+          ? [...log.slice(0, -1), item]
+          : [...log, item],
+      )
+    },
+    [committed],
+  )
 
-  /** تعديل يُعلَّق حتى يُحفظ صراحةً */
-  const stage = useCallback((fn: (d: Database) => Database) => {
-    setStaged((s) => fn(s ?? committed))
-    setPendingCount((n) => n + 1)
-  }, [committed])
+  /** تثبيت يتجاوز التعليق — للاستعادة من نسخة احتياطية ومسح البيانات */
+  const replaceAll = useCallback((next: Database) => {
+    setStaged(null)
+    setPendingLog([])
+    setCommitted(next)
+  }, [])
 
   const saveChanges = useCallback(() => {
     setStaged((s) => {
       if (s) setCommitted(s)
       return null
     })
-    setPendingCount(0)
+    setPendingLog([])
   }, [])
 
   const discardChanges = useCallback(() => {
     setStaged(null)
-    setPendingCount(0)
+    setPendingLog([])
   }, [])
+
+  /** اسم مستثمر من نسخة العمل — للسطر الوصفي في قائمة المعلّق */
+  const nameOf = useCallback(
+    (investorId: string) => db.investors.find((i) => i.id === investorId)?.name ?? '',
+    [db.investors],
+  )
+
+  /* وصفٌ يميّز السطر عن غيره: سطران متطابقان لا يُقرأ منهما ما تغيّر */
+  const profitText = useCallback(
+    (id: string) => {
+      const p = db.profits.find((x) => x.id === id)
+      return p ? `${monthText(p.month)} — ${nameOf(p.investorId)}` : ''
+    },
+    [db.profits, nameOf],
+  )
+
+  const contribText = useCallback(
+    (id: string) => {
+      const c = db.contributions.find((x) => x.id === id)
+      return c ? `${dateText(c.date)} — ${nameOf(c.investorId)}` : ''
+    },
+    [db.contributions, nameOf],
+  )
 
   const addInvestor = useCallback(
     (data: Omit<Investor, 'id' | 'createdAt'>) => {
       const investor: Investor = { ...data, id: newId(), createdAt: todayIso() }
-      commitNow((d) => ({ ...d, investors: [...d.investors, investor] }))
+      stage((d) => ({ ...d, investors: [...d.investors, investor] }), {
+        key: `investor:add:${investor.id}`,
+        label: dict().pending.log.addInvestor(investor.name),
+      })
       return investor
     },
-    [commitNow],
+    [stage],
   )
 
   const updateInvestor = useCallback(
     (id: string, patch: Partial<Investor>) => {
-      commitNow((d) => ({
-        ...d,
-        investors: d.investors.map((i) => (i.id === id ? { ...i, ...patch } : i)),
-      }))
+      stage(
+        (d) => ({
+          ...d,
+          investors: d.investors.map((i) => (i.id === id ? { ...i, ...patch } : i)),
+        }),
+        { key: `investor:edit:${id}`, label: dict().pending.log.editInvestor(nameOf(id)) },
+      )
     },
-    [commitNow],
+    [stage, nameOf],
   )
 
-  const deleteInvestor = useCallback((id: string) => {
-    commitNow((d) => ({
-      ...d,
-      investors: d.investors.filter((i) => i.id !== id),
-      contributions: d.contributions.filter((c) => c.investorId !== id),
-      profits: d.profits.filter((p) => p.investorId !== id),
-    }))
-  }, [commitNow])
+  const deleteInvestor = useCallback(
+    (id: string) => {
+      const label = dict().pending.log.deleteInvestor(nameOf(id))
+      stage(
+        (d) => ({
+          ...d,
+          investors: d.investors.filter((i) => i.id !== id),
+          contributions: d.contributions.filter((c) => c.investorId !== id),
+          profits: d.profits.filter((p) => p.investorId !== id),
+        }),
+        { key: `investor:del:${id}`, label },
+      )
+    },
+    [stage, nameOf],
+  )
 
   const addContribution = useCallback(
     (data: Omit<Contribution, 'id'>) => {
-      commitNow((d) => ({ ...d, contributions: [...d.contributions, { ...data, id: newId() }] }))
+      const id = newId()
+      stage((d) => ({ ...d, contributions: [...d.contributions, { ...data, id }] }), {
+        key: `contrib:add:${id}`,
+        label:
+          data.type === 'deposit'
+            ? dict().pending.log.addDeposit(money(data.amount, ''), nameOf(data.investorId))
+            : dict().pending.log.addWithdrawal(money(data.amount, ''), nameOf(data.investorId)),
+      })
     },
-    [commitNow],
+    [stage, nameOf],
   )
 
   const updateContribution = useCallback(
     (id: string, patch: Partial<Contribution>) => {
-      stage((d) => ({
-        ...d,
-        contributions: d.contributions.map((c) => (c.id === id ? { ...c, ...patch } : c)),
-      }))
+      stage(
+        (d) => ({
+          ...d,
+          contributions: d.contributions.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+        }),
+        { key: `contrib:edit:${id}`, label: dict().pending.log.editContribution(contribText(id)) },
+      )
     },
-    [stage],
+    [stage, contribText],
   )
 
   const deleteContribution = useCallback(
     (id: string) => {
-      stage((d) => ({ ...d, contributions: d.contributions.filter((c) => c.id !== id) }))
+      const label = dict().pending.log.deleteContribution(contribText(id))
+      stage((d) => ({ ...d, contributions: d.contributions.filter((c) => c.id !== id) }), {
+        key: `contrib:del:${id}`,
+        label,
+      })
     },
-    [stage],
+    [stage, contribText],
   )
 
   /** يضيف قيد ربح أو يستبدل القيد الموجود لنفس المستثمر ونفس الشهر */
-  const upsertProfit = useCallback((data: Omit<ProfitEntry, 'id'>) => {
-    commitNow((d) => {
-      const existing = d.profits.find(
-        (p) => p.investorId === data.investorId && p.month === data.month,
+  const upsertProfit = useCallback(
+    (data: Omit<ProfitEntry, 'id'>) => {
+      stage(
+        (d) => {
+          const existing = d.profits.find(
+            (p) => p.investorId === data.investorId && p.month === data.month,
+          )
+          if (existing) {
+            return {
+              ...d,
+              profits: d.profits.map((p) => (p.id === existing.id ? { ...p, ...data } : p)),
+            }
+          }
+          return { ...d, profits: [...d.profits, { ...data, id: newId() }] }
+        },
+        {
+          key: `profit:${data.investorId}:${data.month}`,
+          label: dict().pending.log.setProfit(monthText(data.month), nameOf(data.investorId)),
+        },
       )
-      if (existing) {
-        return {
-          ...d,
-          profits: d.profits.map((p) => (p.id === existing.id ? { ...p, ...data } : p)),
-        }
-      }
-      return { ...d, profits: [...d.profits, { ...data, id: newId() }] }
-    })
-  }, [commitNow])
+    },
+    [stage, nameOf],
+  )
 
   const deleteProfit = useCallback(
     (id: string) => {
-      stage((d) => ({ ...d, profits: d.profits.filter((p) => p.id !== id) }))
+      const label = dict().pending.log.deleteProfit(profitText(id))
+      stage((d) => ({ ...d, profits: d.profits.filter((p) => p.id !== id) }), {
+        key: `profit:del:${id}`,
+        label,
+      })
     },
-    [stage],
+    [stage, profitText],
   )
 
   const setProfitPaid = useCallback(
     (id: string, paid: boolean) => {
-      stage((d) => ({
-        ...d,
-        profits: d.profits.map((p) =>
-          p.id === id ? { ...p, paid, paidDate: paid ? todayIso() : '' } : p,
-        ),
-      }))
+      stage(
+        (d) => ({
+          ...d,
+          profits: d.profits.map((p) =>
+            p.id === id ? { ...p, paid, paidDate: paid ? todayIso() : '' } : p,
+          ),
+        }),
+        {
+          key: `profit:paid:${id}`,
+          label: paid
+            ? dict().pending.log.markPaid(profitText(id))
+            : dict().pending.log.markDue(profitText(id)),
+        },
+      )
     },
-    [stage],
+    [stage, profitText],
   )
 
   const bulkUpsertProfits = useCallback(
     (month: MonthKey, rows: { investorId: string; amount: number }[]) => {
-      commitNow((d) => {
+      stage((d) => {
         let profits = [...d.profits]
         for (const row of rows) {
           const idx = profits.findIndex(
@@ -291,14 +406,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           }
         }
         return { ...d, profits }
+      }, {
+        key: `profits:bulk:${month}`,
+        label: dict().pending.log.bulkProfits(monthText(month), rows.filter((r) => r.amount !== 0).length),
       })
     },
-    [commitNow],
+    [stage],
   )
 
   const updateSettings = useCallback(
     (patch: Partial<Settings>) => {
-      stage((d) => ({ ...d, settings: { ...d.settings, ...patch } }))
+      const fields = Object.keys(patch)
+      stage((d) => ({ ...d, settings: { ...d.settings, ...patch } }), {
+        // مفتاح لكل حقل: الكتابة فيه حرفاً حرفاً تُدمج في سطر واحد
+        key: `settings:${fields.join(',')}`,
+        label: dict().pending.log.settings(fields.map((f) => settingLabel(f)).join('، ')),
+      })
     },
     [stage],
   )
@@ -321,26 +444,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!Array.isArray(parsed.investors)) {
       throw new Error('الملف غير صالح: لا يحتوي على قائمة مستثمرين')
     }
-    setStaged(null)
-    setPendingCount(0)
-    setCommitted({
+    // الاستعادة تُثبَّت فوراً: هي استبدال كامل مؤكَّد لا تعديل يُراجَع
+    replaceAll({
       version: DB_VERSION,
       investors: parsed.investors,
       contributions: parsed.contributions ?? [],
       profits: parsed.profits ?? [],
       settings: migrateSettings(parsed.settings ?? {}),
     })
-  }, [])
+  }, [replaceAll])
 
-  const resetAll = useCallback(() => {
-    setStaged(null)
-    setPendingCount(0)
-    setCommitted({ ...emptyDb, settings: defaultSettings })
-  }, [])
+  const resetAll = useCallback(
+    () => replaceAll({ ...emptyDb, settings: defaultSettings }),
+    [replaceAll],
+  )
 
   const value = useMemo<StoreValue>(
     () => ({
       db,
+      pendingLog,
       pendingCount,
       saveChanges,
       discardChanges,
@@ -361,6 +483,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }),
     [
       db,
+      pendingLog,
       pendingCount,
       saveChanges,
       discardChanges,

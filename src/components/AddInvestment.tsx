@@ -523,6 +523,10 @@ export function AddInvestment({
               ),
             )}
           </p>
+          {/* لا يُقال «حُفظ» لما لم يُحفظ بعد */}
+          <p className="hint" style={{ marginTop: 10 }}>
+            {t.pending.notYet}
+          </p>
         </div>
       )}
     </Modal>
