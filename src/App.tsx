@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore } from './store'
 import { LogoMark, ThemeToggle, Wordmark } from './components/ui'
+import { PendingBar } from './components/PendingBar'
 import {
   IconChart,
   IconDashboard,
@@ -101,6 +102,8 @@ export default function App() {
         {route.name === 'reports' && <Reports initialInvestorId={route.investorId} />}
         {route.name === 'settings' && <SettingsPage />}
       </main>
+
+      <PendingBar />
     </div>
   )
 }

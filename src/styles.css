@@ -1095,64 +1095,6 @@ tfoot td {
   unicode-bidi: isolate;
 }
 
-/*
- * جدول الدفعات الاستثمارية.
- * الربح والعائد هما جوهر الجدول، فلا يجوز أن يختفيا خلف تمرير أفقي على
- * الجوال. تحت 780px يتحوّل كل صف إلى بطاقة مستقلة يحمل فيها كل سطر
- * عنوان عموده، فتظهر الأرقام الستة كاملة ضمن عرض الشاشة.
- */
-.tranche-table {
-  min-width: 0;
-}
-
-@media (max-width: 780px) {
-  .tranche-table,
-  .tranche-table tbody,
-  .tranche-table tr,
-  .tranche-table td {
-    display: block;
-    width: 100%;
-  }
-
-  .tranche-table thead {
-    display: none;
-  }
-
-  .tranche-table tr {
-    padding: 10px 14px 12px;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .tranche-table tr:last-child {
-    border-bottom: 0;
-  }
-
-  .tranche-table td {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 3px 0;
-    border: 0;
-    text-align: start;
-  }
-
-  .tranche-table td::before {
-    content: attr(data-label);
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 500;
-  }
-
-  /* تاريخ الإيداع عنوانٌ للبطاقة لا سطراً فيها */
-  .tranche-table .tranche-head {
-    margin-bottom: 4px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid var(--line-row);
-    font-weight: 600;
-  }
-}
-
 /* ═══════════ إضافة مبلغ استثماري ═══════════ */
 
 /* الخطوة الأولى: مستثمر جديد أم قائم */
@@ -1478,39 +1420,109 @@ tfoot td {
   gap: 8px;
 }
 
+/* ═══════════ شريط التعديلات المعلّقة ═══════════ */
+
+.pending-bar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(720px, calc(100% - 24px));
+  margin: 0 auto 16px;
+  padding: 11px 16px;
+  padding-bottom: calc(11px + env(safe-area-inset-bottom));
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: linear-gradient(160deg, var(--surface-solid-1), var(--surface-solid-2));
+  box-shadow: var(--shadow);
+}
+
+.pending-bar.is-done {
+  justify-content: center;
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.pending-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--warn);
+}
+
+.pending-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.pending-text b {
+  font-size: 13.5px;
+  color: var(--heading);
+}
+
+.pending-text small {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+/* الشريط يغطّي أسفل الصفحة، فيُترك له مكان تحت المحتوى */
+.main {
+  padding-bottom: 92px;
+}
+
+@media (max-width: 640px) {
+  .pending-bar {
+    gap: 8px;
+    padding-inline: 12px;
+  }
+
+  .pending-text small {
+    display: none;
+  }
+}
+
+/* ═══════════ جداول تتحوّل إلى بطاقات على الجوال ═══════════ */
+
 /*
- * ستة أعمدة أحدها حقل إدخال لا تتّسع في عرض الجوال.
- * تحت 780px يصير كل صف بطاقة، وعناوين الأعمدة تنتقل إلى الخانات،
- * فيبقى اسم المستثمر وحقل ربحه ظاهرين بلا تمرير أفقي.
+ * جداول تفاصيل المستثمر ستة أعمدة أو أكثر، وبعضها يحمل حقل إدخال.
+ * على عرض الجوال تدفع الأعمدة الأخيرة أهمَّ خانةٍ خارج الشاشة، فتُقرأ
+ * أرقامٌ بلا اسم صاحبها. تحت 780px يصير كل صف بطاقة، وعنوان كل عمود
+ * ينتقل إلى خانته عبر data-label، فلا يبقى تمرير أفقي ولا خانة مقصوصة.
  */
-.profit-table {
+.stack-table {
   min-width: 0;
 }
 
 @media (max-width: 780px) {
-  .profit-table,
-  .profit-table tbody,
-  .profit-table tfoot,
-  .profit-table tr,
-  .profit-table td {
+  .stack-table,
+  .stack-table tbody,
+  .stack-table tfoot,
+  .stack-table tr,
+  .stack-table td {
     display: block;
     width: 100%;
   }
 
-  .profit-table thead {
+  .stack-table thead {
     display: none;
   }
 
-  .profit-table tr {
+  .stack-table tr {
     padding: 10px 14px 12px;
     border-bottom: 1px solid var(--line);
   }
 
-  .profit-table tbody tr:last-child {
+  .stack-table tbody tr:last-child {
     border-bottom: 0;
   }
 
-  .profit-table td {
+  .stack-table td {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1520,7 +1532,7 @@ tfoot td {
     text-align: start;
   }
 
-  .profit-table td::before {
+  .stack-table td::before {
     content: attr(data-label);
     flex: none;
     color: var(--muted);
@@ -1528,30 +1540,41 @@ tfoot td {
     font-weight: 500;
   }
 
-  /* اسم المستثمر عنوانٌ للبطاقة لا سطراً فيها */
-  .profit-table .profit-head {
+  /* الخانة الأولى عنوانٌ للبطاقة لا سطراً فيها */
+  .stack-table .stack-head {
     display: block;
     margin-bottom: 4px;
     padding-bottom: 6px;
     border-bottom: 1px solid var(--line-row);
+    font-weight: 600;
   }
 
-  .profit-table .profit-head::before {
+  .stack-table .stack-head::before {
     display: none;
   }
 
-  /* حقل الإدخال يأخذ عرض البطاقة، فيبقى الرقم مقروءاً */
-  .profit-table td .unit-input {
+  /* خانة بلا عنوان — أزرار الحذف ونحوها تُحاذى للنهاية */
+  .stack-table td.stack-actions {
+    justify-content: flex-end;
+    padding-top: 8px;
+  }
+
+  .stack-table td.stack-actions::before {
+    display: none;
+  }
+
+  /* حقل الإدخال يأخذ ما يتّسع له، فيبقى الرقم مقروءاً */
+  .stack-table td .unit-input {
     flex: 1 1 auto;
     min-width: 0;
     max-width: 60%;
   }
 
-  .profit-table td[style] {
+  .stack-table td[style] {
     width: 100%;
   }
 
-  .profit-table tfoot td {
+  .stack-table tfoot td {
     font-weight: 600;
   }
 }

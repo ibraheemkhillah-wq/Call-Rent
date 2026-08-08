@@ -90,6 +90,12 @@ function loadDb(): Database {
 
 interface StoreValue {
   db: Database
+  /** عدد التعديلات المعلّقة التي لم تُحفظ بعد */
+  pendingCount: number
+  /** يثبّت التعديلات المعلّقة في التخزين */
+  saveChanges: () => void
+  /** يتراجع عن كل التعديلات المعلّقة */
+  discardChanges: () => void
   /* المستثمرون */
   addInvestor: (data: Omit<Investor, 'id' | 'createdAt'>) => Investor
   updateInvestor: (id: string, patch: Partial<Investor>) => void
@@ -114,56 +120,121 @@ interface StoreValue {
 const StoreContext = createContext<StoreValue | null>(null)
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [db, setDb] = useState<Database>(() => loadDb())
+  /*
+   * نسختان من البيانات:
+   *  • committed — المحفوظ فعلاً، وهو وحده ما يُكتب في التخزين المحلي.
+   *  • staged    — نسخة عمل تحمل التعديلات المعلّقة، فارغة حين لا تعديل.
+   *
+   * ما يُنفَّذ بنقرة واحدة بلا تأكيد — تبديل حالة الصرف أو مصدر الدفعة أو
+   * حذف سطر أو الكتابة في الإعدادات — يذهب إلى نسخة العمل لا إلى التخزين،
+   * فلا تُثبَّت لمسة خاطئة حتى يضغط المستخدم «حفظ التعديلات».
+   * أما ما يمرّ بنموذج وزرِّ حفظ فيُثبَّت فوراً: قد قُصد أصلاً.
+   */
+  const [committed, setCommitted] = useState<Database>(() => loadDb())
+  const [staged, setStaged] = useState<Database | null>(null)
+  const [pendingCount, setPendingCount] = useState(0)
+
+  const db = staged ?? committed
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(db))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(committed))
     } catch (err) {
       console.error('تعذّر حفظ البيانات محلياً', err)
     }
-  }, [db])
+  }, [committed])
 
-  const addInvestor = useCallback((data: Omit<Investor, 'id' | 'createdAt'>) => {
-    const investor: Investor = { ...data, id: newId(), createdAt: todayIso() }
-    setDb((d) => ({ ...d, investors: [...d.investors, investor] }))
-    return investor
+  /** تحذير قبل مغادرة الصفحة وفيها تعديل معلّق */
+  useEffect(() => {
+    if (pendingCount === 0) return
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [pendingCount])
+
+  /** تعديل يُثبَّت فوراً — ويُطبَّق على نسخة العمل أيضاً إن وُجدت */
+  const commitNow = useCallback((fn: (d: Database) => Database) => {
+    setCommitted(fn)
+    setStaged((s) => (s ? fn(s) : null))
   }, [])
 
-  const updateInvestor = useCallback((id: string, patch: Partial<Investor>) => {
-    setDb((d) => ({
-      ...d,
-      investors: d.investors.map((i) => (i.id === id ? { ...i, ...patch } : i)),
-    }))
+  /** تعديل يُعلَّق حتى يُحفظ صراحةً */
+  const stage = useCallback((fn: (d: Database) => Database) => {
+    setStaged((s) => fn(s ?? committed))
+    setPendingCount((n) => n + 1)
+  }, [committed])
+
+  const saveChanges = useCallback(() => {
+    setStaged((s) => {
+      if (s) setCommitted(s)
+      return null
+    })
+    setPendingCount(0)
   }, [])
+
+  const discardChanges = useCallback(() => {
+    setStaged(null)
+    setPendingCount(0)
+  }, [])
+
+  const addInvestor = useCallback(
+    (data: Omit<Investor, 'id' | 'createdAt'>) => {
+      const investor: Investor = { ...data, id: newId(), createdAt: todayIso() }
+      commitNow((d) => ({ ...d, investors: [...d.investors, investor] }))
+      return investor
+    },
+    [commitNow],
+  )
+
+  const updateInvestor = useCallback(
+    (id: string, patch: Partial<Investor>) => {
+      commitNow((d) => ({
+        ...d,
+        investors: d.investors.map((i) => (i.id === id ? { ...i, ...patch } : i)),
+      }))
+    },
+    [commitNow],
+  )
 
   const deleteInvestor = useCallback((id: string) => {
-    setDb((d) => ({
+    commitNow((d) => ({
       ...d,
       investors: d.investors.filter((i) => i.id !== id),
       contributions: d.contributions.filter((c) => c.investorId !== id),
       profits: d.profits.filter((p) => p.investorId !== id),
     }))
-  }, [])
+  }, [commitNow])
 
-  const addContribution = useCallback((data: Omit<Contribution, 'id'>) => {
-    setDb((d) => ({ ...d, contributions: [...d.contributions, { ...data, id: newId() }] }))
-  }, [])
+  const addContribution = useCallback(
+    (data: Omit<Contribution, 'id'>) => {
+      commitNow((d) => ({ ...d, contributions: [...d.contributions, { ...data, id: newId() }] }))
+    },
+    [commitNow],
+  )
 
-  const updateContribution = useCallback((id: string, patch: Partial<Contribution>) => {
-    setDb((d) => ({
-      ...d,
-      contributions: d.contributions.map((c) => (c.id === id ? { ...c, ...patch } : c)),
-    }))
-  }, [])
+  const updateContribution = useCallback(
+    (id: string, patch: Partial<Contribution>) => {
+      stage((d) => ({
+        ...d,
+        contributions: d.contributions.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+      }))
+    },
+    [stage],
+  )
 
-  const deleteContribution = useCallback((id: string) => {
-    setDb((d) => ({ ...d, contributions: d.contributions.filter((c) => c.id !== id) }))
-  }, [])
+  const deleteContribution = useCallback(
+    (id: string) => {
+      stage((d) => ({ ...d, contributions: d.contributions.filter((c) => c.id !== id) }))
+    },
+    [stage],
+  )
 
   /** يضيف قيد ربح أو يستبدل القيد الموجود لنفس المستثمر ونفس الشهر */
   const upsertProfit = useCallback((data: Omit<ProfitEntry, 'id'>) => {
-    setDb((d) => {
+    commitNow((d) => {
       const existing = d.profits.find(
         (p) => p.investorId === data.investorId && p.month === data.month,
       )
@@ -175,24 +246,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
       return { ...d, profits: [...d.profits, { ...data, id: newId() }] }
     })
-  }, [])
+  }, [commitNow])
 
-  const deleteProfit = useCallback((id: string) => {
-    setDb((d) => ({ ...d, profits: d.profits.filter((p) => p.id !== id) }))
-  }, [])
+  const deleteProfit = useCallback(
+    (id: string) => {
+      stage((d) => ({ ...d, profits: d.profits.filter((p) => p.id !== id) }))
+    },
+    [stage],
+  )
 
-  const setProfitPaid = useCallback((id: string, paid: boolean) => {
-    setDb((d) => ({
-      ...d,
-      profits: d.profits.map((p) =>
-        p.id === id ? { ...p, paid, paidDate: paid ? todayIso() : '' } : p,
-      ),
-    }))
-  }, [])
+  const setProfitPaid = useCallback(
+    (id: string, paid: boolean) => {
+      stage((d) => ({
+        ...d,
+        profits: d.profits.map((p) =>
+          p.id === id ? { ...p, paid, paidDate: paid ? todayIso() : '' } : p,
+        ),
+      }))
+    },
+    [stage],
+  )
 
   const bulkUpsertProfits = useCallback(
     (month: MonthKey, rows: { investorId: string; amount: number }[]) => {
-      setDb((d) => {
+      commitNow((d) => {
         let profits = [...d.profits]
         for (const row of rows) {
           const idx = profits.findIndex(
@@ -216,12 +293,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         return { ...d, profits }
       })
     },
-    [],
+    [commitNow],
   )
 
-  const updateSettings = useCallback((patch: Partial<Settings>) => {
-    setDb((d) => ({ ...d, settings: { ...d.settings, ...patch } }))
-  }, [])
+  const updateSettings = useCallback(
+    (patch: Partial<Settings>) => {
+      stage((d) => ({ ...d, settings: { ...d.settings, ...patch } }))
+    },
+    [stage],
+  )
 
   const exportJson = useCallback(() => {
     const blob = new Blob([JSON.stringify(db, null, 2)], {
@@ -241,7 +321,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!Array.isArray(parsed.investors)) {
       throw new Error('الملف غير صالح: لا يحتوي على قائمة مستثمرين')
     }
-    setDb({
+    setStaged(null)
+    setPendingCount(0)
+    setCommitted({
       version: DB_VERSION,
       investors: parsed.investors,
       contributions: parsed.contributions ?? [],
@@ -250,11 +332,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  const resetAll = useCallback(() => setDb({ ...emptyDb, settings: defaultSettings }), [])
+  const resetAll = useCallback(() => {
+    setStaged(null)
+    setPendingCount(0)
+    setCommitted({ ...emptyDb, settings: defaultSettings })
+  }, [])
 
   const value = useMemo<StoreValue>(
     () => ({
       db,
+      pendingCount,
+      saveChanges,
+      discardChanges,
       addInvestor,
       updateInvestor,
       deleteInvestor,
@@ -272,6 +361,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }),
     [
       db,
+      pendingCount,
+      saveChanges,
+      discardChanges,
       addInvestor,
       updateInvestor,
       deleteInvestor,

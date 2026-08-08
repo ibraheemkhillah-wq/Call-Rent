@@ -248,7 +248,7 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
           <p className="muted">{u.detNoProfits}</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="stack-table">
               <thead>
                 <tr>
                   <th>{t.profits.month}</th>
@@ -266,11 +266,19 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
                   const pct = cap > 0 ? (p.amount / cap) * 100 : 0
                   return (
                     <tr key={p.id}>
-                      <td>{monthLabel(p.month)}</td>
-                      <td className="num">{money(cap, sym)}</td>
-                      <td className="num accent">{money(p.amount, sym)}</td>
-                      <td className="num pos">{percent(pct)}</td>
-                      <td>
+                      <td className="stack-head" data-label={t.profits.month}>
+                        {monthLabel(p.month)}
+                      </td>
+                      <td className="num" data-label={t.profits.capital}>
+                        {money(cap, sym)}
+                      </td>
+                      <td className="num accent" data-label={t.profits.profit}>
+                        {money(p.amount, sym)}
+                      </td>
+                      <td className="num pos" data-label={t.profits.pct}>
+                        {percent(pct)}
+                      </td>
+                      <td data-label={t.investors.status}>
                         <button
                           className={p.paid ? 'badge badge-success' : 'badge badge-warn'}
                           style={{ cursor: 'pointer', border: '1px solid' }}
@@ -286,8 +294,10 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
                           )}
                         </button>
                       </td>
-                      <td className="muted">{p.note || '—'}</td>
-                      <td>
+                      <td className="muted" data-label={t.investor.note}>
+                        {p.note || '—'}
+                      </td>
+                      <td className="stack-actions">
                         <button
                           className="icon-btn"
                           title={u.detDeleteEntry}
@@ -333,7 +343,7 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
            * إلى بطاقة مستقلة، وعناوين الأعمدة تُنقَل إلى كل خانة عبر data-label.
            */}
           <div className="table-wrap">
-            <table className="tranche-table">
+            <table className="stack-table">
               <thead>
                 <tr>
                   <th>{dc.trancheDate}</th>
@@ -347,7 +357,7 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
               <tbody>
                 {tranches.map((tr) => (
                   <tr key={tr.id} className="tranche-row">
-                    <td className="tranche-head" data-label={dc.trancheDate}>
+                    <td className="stack-head" data-label={dc.trancheDate}>
                       {dateLabel(tr.date)}
                     </td>
                     <td className="num" data-label={dc.trancheAmount}>
@@ -395,7 +405,7 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
           <p className="muted">{u.detNoMovements}</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="stack-table">
               <thead>
                 <tr>
                   <th>{t.investor.date}</th>
@@ -409,18 +419,23 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
               <tbody>
                 {mine.map((c) => (
                   <tr key={c.id}>
-                    <td>{dateLabel(c.date)}</td>
-                    <td>
+                    <td className="stack-head" data-label={t.investor.date}>
+                      {dateLabel(c.date)}
+                    </td>
+                    <td data-label={u.detColType}>
                       <span
                         className={c.type === 'deposit' ? 'badge badge-accent' : 'badge badge-muted'}
                       >
                         {c.type === 'deposit' ? t.investor.deposit : t.investor.withdrawal}
                       </span>
                     </td>
-                    <td className={c.type === 'deposit' ? 'num pos' : 'num neg'}>
+                    <td
+                      className={c.type === 'deposit' ? 'num pos' : 'num neg'}
+                      data-label={t.investor.amount}
+                    >
                       {c.type === 'deposit' ? '+' : '−'} {money(c.amount, sym)}
                     </td>
-                    <td>
+                    <td data-label={t.invest.colSource}>
                       {c.type === 'deposit' ? (
                         /* المصدر يُبدَّل بعد التسجيل: النقر يدوّره على الثلاثة */
                         <button
@@ -434,8 +449,10 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
                         <span className="muted">—</span>
                       )}
                     </td>
-                    <td className="muted">{c.note || '—'}</td>
-                    <td>
+                    <td className="muted" data-label={t.investor.note}>
+                      {c.note || '—'}
+                    </td>
+                    <td className="stack-actions">
                       <button
                         className="icon-btn"
                         title={u.detDeleteMovement}

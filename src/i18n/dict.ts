@@ -565,6 +565,17 @@ export const ar = {
     noteExtra: 'دفعة إضافية',
   },
 
+  /* ── التعديلات المعلّقة ── */
+  pending: {
+    count: (n: number) =>
+      n === 1 ? 'تعديل واحد غير محفوظ' : n === 2 ? 'تعديلان غير محفوظين'
+      : n <= 10 ? `${n} تعديلات غير محفوظة` : `${n} تعديلاً غير محفوظ`,
+    note: 'لن يُثبَّت شيء حتى تحفظ',
+    save: 'حفظ التعديلات',
+    discard: 'تراجع',
+    saved: 'حُفظت التعديلات',
+  },
+
   theme: {
     toLight: 'الرؤية النهارية',
     toDark: 'الرؤية الليلية',
@@ -1124,6 +1135,14 @@ export const en: Dict = {
     noteExtra: 'Additional tranche',
   },
 
+  pending: {
+    count: (n) => (n === 1 ? '1 unsaved change' : `${n} unsaved changes`),
+    note: 'Nothing is stored until you save',
+    save: 'Save changes',
+    discard: 'Undo',
+    saved: 'Changes saved',
+  },
+
   theme: {
     toLight: 'light mode',
     toDark: 'dark mode',
@@ -1679,6 +1698,14 @@ export const tr: Dict = {
     noteWithdraw: 'Sermaye çekimi',
     noteFirst: 'İlk dilim',
     noteExtra: 'Ek dilim',
+  },
+
+  pending: {
+    count: (n) => `${n} kaydedilmemiş değişiklik`,
+    note: 'Kaydedene kadar hiçbir şey saklanmaz',
+    save: 'Değişiklikleri kaydet',
+    discard: 'Geri al',
+    saved: 'Değişiklikler kaydedildi',
   },
 
   theme: {

@@ -224,7 +224,7 @@ export function Profits({ go }: { go: (r: Route) => void }) {
         </div>
 
         <div className="table-wrap">
-          <table className="profit-table">
+          <table className="stack-table">
             <thead>
               <tr>
                 <th>{t.profits.investor}</th>
@@ -246,7 +246,7 @@ export function Profits({ go }: { go: (r: Route) => void }) {
                 const share = totalCapital > 0 ? (r.capital / totalCapital) * 100 : 0
                 return (
                   <tr key={id} className="profit-row">
-                    <td className="profit-head" data-label={t.profits.investor}>
+                    <td className="stack-head" data-label={t.profits.investor}>
                       <div className="person-name">{r.investor.name}</div>
                       {r.capital <= 0 && <div className="person-meta">{u.profNoCapital}</div>}
                     </td>
