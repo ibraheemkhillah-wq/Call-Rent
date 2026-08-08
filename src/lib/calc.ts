@@ -11,6 +11,7 @@
 
 import type {
   Contribution,
+  DepositSource,
   Investor,
   MonthKey,
   PeriodType,
@@ -105,6 +106,19 @@ export function capitalAtMonthEnd(contributions: Contribution[], month: MonthKey
   return capitalAsOf(contributions, endOfMonth(month))
 }
 
+
+/**
+ * مصدر إيداعٍ ما، مع استنتاجٍ لما سُجّل قبل وجود هذا الحقل.
+ * أقدم إيداع للمستثمر هو استثماره الأولي، وما بعده مال جديد — فتُقرأ
+ * البيانات القديمة صحيحةً بلا ترحيل ولا تعديل عليها.
+ */
+export function depositSource(c: Contribution, all: Contribution[]): DepositSource {
+  if (c.source) return c.source
+  const mine = all
+    .filter((x) => x.investorId === c.investorId && x.type === 'deposit')
+    .sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id))
+  return mine[0]?.id === c.id ? 'initial' : 'new'
+}
 
 /* ────────────────────────── تفصيل الدفعات ────────────────────────── */
 

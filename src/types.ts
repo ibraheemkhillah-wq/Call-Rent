@@ -19,6 +19,9 @@ export interface Investor {
   createdAt: string
 }
 
+/** مصدر الإيداع — انظر Contribution.source */
+export type DepositSource = 'initial' | 'new' | 'profit'
+
 /** حركة رأس مال: إيداع (استثمار) أو سحب من رأس المال */
 export interface Contribution {
   id: string
@@ -29,14 +32,18 @@ export interface Contribution {
   amount: number
   type: 'deposit' | 'withdrawal'
   /**
-   * مصدر مبلغ الإيداع: مال جديد من خارج المحفظة، أو أرباح مستحقّة
-   * حوّلها المستثمر إلى رأس مال. غيابه يعني «جديد» — هكذا كانت كل
-   * الإيداعات قبل إضافة هذا التمييز.
+   * مصدر مبلغ الإيداع:
+   *  • initial — الاستثمار الأولي الذي دخل به المستثمر أول مرة
+   *  • new     — مال جديد من خارج المحفظة يُضاف فوق ما سبق
+   *  • profit  — أرباح مستحقّة حوّلها المستثمر إلى رأس مال
+   *
+   * غيابه في بيانات سابقة يُستنتج بـ depositSource: أقدم إيداع أوّليّ
+   * وما بعده جديد.
    *
    * التمييز ليس وصفاً فحسب: ما أُعيد استثماره من العوائد لم يعد ديناً
    * على الشركة، فيُخصم من الأرباح المستحقّة كي لا يُحسب المبلغ مرتين.
    */
-  source?: 'new' | 'profit'
+  source?: DepositSource
   note: string
 }
 

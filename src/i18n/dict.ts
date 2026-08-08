@@ -525,6 +525,8 @@ export const ar = {
     addAnother: 'إضافة مبلغ آخر',
     /* ── مصدر الدفعة ── */
     sourceLabel: 'مصدر المبلغ',
+    sourceInitial: 'استثمار أولي',
+    sourceInitialSub: 'رأس المال الذي دخل به أول مرة',
     sourceNew: 'دفعة استثمارية جديدة',
     sourceNewSub: 'مال جديد من خارج المحفظة',
     sourceProfit: 'دفعة استثمارية من العوائد',
@@ -534,6 +536,7 @@ export const ar = {
       `المبلغ يتجاوز أرباحه المستحقّة (${amount}) — والزائد يُحسب مالاً جديداً`,
     sourceNote:
       'ما يُعاد استثماره من العوائد يُخصم من الأرباح المستحقّة، فلا يُحسب مرة في رأس المال ومرة في المستحق.',
+    badgeInitial: 'أولي',
     badgeNew: 'جديد',
     badgeProfit: 'من العوائد',
     reinvestedStat: 'المُعاد استثماره من العوائد',
@@ -1082,6 +1085,8 @@ export const en: Dict = {
     goInvestor: 'Open investor page',
     addAnother: 'Add another amount',
     sourceLabel: 'Source of funds',
+    sourceInitial: 'Initial investment',
+    sourceInitialSub: 'The capital they started with',
     sourceNew: 'New investment',
     sourceNewSub: 'Fresh money from outside the portfolio',
     sourceProfit: 'Reinvested returns',
@@ -1091,6 +1096,7 @@ export const en: Dict = {
       `The amount exceeds the profit owed to them (${amount}) — the excess counts as new money`,
     sourceNote:
       'Reinvested returns are deducted from profit owed, so the money is not counted once as capital and again as owed.',
+    badgeInitial: 'Initial',
     badgeNew: 'New',
     badgeProfit: 'Reinvested',
     reinvestedStat: 'Reinvested from returns',
@@ -1636,6 +1642,8 @@ export const tr: Dict = {
     goInvestor: 'Yatırımcı sayfasını aç',
     addAnother: 'Başka bir tutar ekle',
     sourceLabel: 'Kaynak',
+    sourceInitial: 'İlk yatırım',
+    sourceInitialSub: 'İlk girdiği sermaye',
     sourceNew: 'Yeni yatırım',
     sourceNewSub: 'Portföy dışından gelen yeni para',
     sourceProfit: 'Getirilerden yeniden yatırım',
@@ -1645,6 +1653,7 @@ export const tr: Dict = {
       `Tutar, hak ettiği kârı (${amount}) aşıyor — fazlası yeni para sayılır`,
     sourceNote:
       'Yeniden yatırılan getiriler hak edilen kârdan düşülür; böylece para hem sermayede hem borçta iki kez sayılmaz.',
+    badgeInitial: 'İlk',
     badgeNew: 'Yeni',
     badgeProfit: 'Getiriden',
     reinvestedStat: 'Getirilerden yeniden yatırılan',

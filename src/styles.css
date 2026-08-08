@@ -1402,13 +1402,24 @@ tfoot td {
   color: var(--muted);
 }
 
+.src-tag.is-initial {
+  border-color: var(--accent-dark);
+  color: var(--accent);
+}
+
 .src-tag.is-profit {
   border-color: var(--success);
   color: var(--success);
 }
 
-@media (max-width: 640px) {
-  .seg {
+/* ثلاثة خيارات لا اثنان — تتقاسم العرض بالتساوي */
+.seg-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 760px) {
+  .seg,
+  .seg-3 {
     grid-template-columns: 1fr;
   }
 }

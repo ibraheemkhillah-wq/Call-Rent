@@ -16,11 +16,10 @@ import { summarizeInvestor, trancheBreakdown } from '../lib/calc'
 import { dateLabel, initials, money, parseAmount, todayIso } from '../lib/format'
 import { Field, Modal } from './ui'
 import { IconCheck, IconPlus, IconUsers, IconWallet } from './Icons'
-import type { Investor } from '../types'
+import type { DepositSource, Investor } from '../types'
 
 type Step = 'choose' | 'new' | 'old' | 'done'
 type Mode = 'deposit' | 'withdrawal'
-type Source = 'new' | 'profit'
 
 const blankPerson = {
   name: '',
@@ -54,7 +53,7 @@ export function AddInvestment({
   const [pickedId, setPickedId] = useState('')
   const [query, setQuery] = useState('')
   const [amount, setAmount] = useState('')
-  const [source, setSource] = useState<Source>('new')
+  const [source, setSource] = useState<DepositSource>('new')
   const [date, setDate] = useState(todayIso())
   const [note, setNote] = useState('')
   const [error, setError] = useState('')
@@ -131,8 +130,8 @@ export function AddInvestment({
       date,
       amount: parsed,
       type: 'deposit',
-      // أول دفعة لمستثمر جديد لا تأتي من عوائد لم توجد بعد
-      source: 'new',
+      // أول ما دخل به المستثمر — لا هو إضافة فوق سابق ولا من عوائد لم توجد
+      source: 'initial',
       note: note.trim() || v.noteFirst,
     })
     setDone({ id: created.id, name: created.name, amount: parsed })
@@ -197,7 +196,14 @@ export function AddInvestment({
   const sourcePicker = (
     <div style={{ marginTop: 16 }}>
       <div className="seg-label">{v.sourceLabel}</div>
-      <div className="seg">
+      <div className="seg seg-3">
+        <button
+          className={source === 'initial' ? 'seg-btn is-on' : 'seg-btn'}
+          onClick={() => setSource('initial')}
+        >
+          <span className="seg-title">{v.sourceInitial}</span>
+          <span className="seg-sub">{v.sourceInitialSub}</span>
+        </button>
         <button
           className={source === 'new' ? 'seg-btn is-on' : 'seg-btn'}
           onClick={() => setSource('new')}
@@ -393,6 +399,8 @@ export function AddInvestment({
                     className={s.investor.id === pickedId ? 'pick-row is-picked' : 'pick-row'}
                     onClick={() => {
                       setPickedId(s.investor.id)
+                      // من لا إيداع له بعد، فهذا استثماره الأوّل
+                      setSource(depositCount(s.investor.id) === 0 ? 'initial' : 'new')
                       setError('')
                     }}
                   >

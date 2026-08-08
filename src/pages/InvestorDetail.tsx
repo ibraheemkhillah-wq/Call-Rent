@@ -1,7 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '../store'
 import { useT } from '../i18n'
-import { capitalAtMonthEnd, summarizeInvestor, trancheBreakdown } from '../lib/calc'
+import {
+  capitalAtMonthEnd,
+  depositSource,
+  summarizeInvestor,
+  trancheBreakdown,
+} from '../lib/calc'
 import {
   currentMonthKey,
   dateLabel,
@@ -24,6 +29,7 @@ import {
   IconTrend,
   IconWallet,
 } from '../components/Icons'
+import type { Contribution, DepositSource } from '../types'
 import type { Route } from '../App'
 
 export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void }) {
@@ -127,6 +133,17 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
   }
 
   const contribsOfInvestor = db.contributions.filter((c) => c.investorId === id)
+
+  /* المصدر المعروض — مُستنتَج لما سُجّل قبل وجود الحقل */
+  const sourceOf = (c: Contribution) => depositSource(c, db.contributions)
+  const SRC_ORDER: DepositSource[] = ['initial', 'new', 'profit']
+  const SRC_LABEL: Record<DepositSource, string> = {
+    initial: t.invest.badgeInitial,
+    new: t.invest.badgeNew,
+    profit: t.invest.badgeProfit,
+  }
+  const nextSource = (c: Contribution): DepositSource =>
+    SRC_ORDER[(SRC_ORDER.indexOf(sourceOf(c)) + 1) % SRC_ORDER.length]
 
   return (
     <>
@@ -405,21 +422,13 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
                     </td>
                     <td>
                       {c.type === 'deposit' ? (
-                        /* المصدر يُبدَّل بعد التسجيل: النقر يقلبه بين الحالتين */
+                        /* المصدر يُبدَّل بعد التسجيل: النقر يدوّره على الثلاثة */
                         <button
-                          className={
-                            c.source === 'profit' ? 'src-tag is-profit' : 'src-tag'
-                          }
+                          className={`src-tag is-${sourceOf(c)}`}
                           title={t.invest.sourceLabel}
-                          onClick={() =>
-                            updateContribution(c.id, {
-                              source: c.source === 'profit' ? 'new' : 'profit',
-                            })
-                          }
+                          onClick={() => updateContribution(c.id, { source: nextSource(c) })}
                         >
-                          {c.source === 'profit'
-                            ? t.invest.badgeProfit
-                            : t.invest.badgeNew}
+                          {SRC_LABEL[sourceOf(c)]}
                         </button>
                       ) : (
                         <span className="muted">—</span>

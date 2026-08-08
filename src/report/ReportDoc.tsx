@@ -1,8 +1,8 @@
 /** مستند التقرير — صفحة A4 واحدة، مضغوطة وجاهزة للتصدير PDF */
 
 import type { PeriodReport, SeriesPoint } from '../lib/calc'
-import { annualizeFactor, periodNames } from '../lib/calc'
-import type { Settings } from '../types'
+import { annualizeFactor, depositSource, periodNames } from '../lib/calc'
+import type { Contribution, DepositSource, Settings } from '../types'
 import { dateLabel, money, monthLabel, percent, todayIso } from '../lib/format'
 import { Wordmark } from '../components/ui'
 import { brand } from '../theme/brand'
@@ -29,10 +29,13 @@ export function ReportDoc({
   report,
   settings,
   series,
+  contributions,
 }: {
   report: PeriodReport
   settings: Settings
   series: SeriesPoint[]
+  /** كل الحركات — يُستنتَج منها مصدر إيداعات ما قبل وجود الحقل */
+  contributions: Contribution[]
 }) {
   const { t, dir, lang } = useLang()
   const d = t.doc
@@ -46,6 +49,11 @@ export function ReportDoc({
   const signer = s.signatureName || brand.signature.name
   const signature = s.signatureImage || signatureImg
   const monthsWithData = report.months.filter((m) => m.hasEntry)
+  const srcLabel: Record<DepositSource, string> = {
+    initial: t.invest.badgeInitial,
+    new: t.invest.badgeNew,
+    profit: t.invest.badgeProfit,
+  }
 
   /** يضمن بقاء التقرير في صفحة واحدة مهما طال الجدول */
   const fitRef = useFitToPage<HTMLElement>([report, settings, series])
@@ -228,11 +236,7 @@ export function ReportDoc({
                       {c.type === 'deposit' ? '+' : '−'} {money(c.amount, '')}
                     </td>
                     <td>
-                      {c.type !== 'deposit'
-                        ? '—'
-                        : c.source === 'profit'
-                          ? t.invest.badgeProfit
-                          : t.invest.badgeNew}
+                      {c.type !== 'deposit' ? '—' : srcLabel[depositSource(c, contributions)]}
                     </td>
                     <td>{c.note || '—'}</td>
                   </tr>

@@ -341,6 +341,7 @@ export function Reports({ initialInvestorId }: { initialInvestorId?: string }) {
             report={report}
             series={series}
             settings={db.settings}
+            contributions={db.contributions}
           />
         ))}
       </div>
