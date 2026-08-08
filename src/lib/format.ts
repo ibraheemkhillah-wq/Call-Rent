@@ -73,3 +73,51 @@ export function initials(name: string): string {
   if (parts.length === 1) return parts[0].slice(0, 2)
   return parts[0][0] + parts[1][0]
 }
+
+/**
+ * قراءة مبلغ كتبه المستخدم.
+ *
+ * لوحة المفاتيح التركية والعربية تكتب الفاصلة العشرية «،» أو «,» لا النقطة،
+ * و«4287,50» في JavaScript يقرأ NaN فيُرفض المبلغ وهو صحيح. تُقبل هنا
+ * الفاصلة والنقطة والأرقام العربية الهندية، وتُهمل فواصل الآلاف ورمز
+ * العملة والمسافات. آخر فاصل في النص هو العشري إن تبعه ثلاث خانات أو أقل.
+ *
+ * تُرجع NaN لِما لا يمكن قراءته رقماً، ليبقى التحقق عند المُنادي.
+ */
+export function parseAmount(input: string): number {
+  if (typeof input !== 'string') return Number(input)
+
+  // الأرقام العربية الهندية والفارسية إلى اللاتينية
+  let s = input.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+
+  // كل ما ليس رقماً أو فاصلاً أو إشارة سالب يُهمل — رموز العملة والمسافات
+  s = s.replace(/[٫٬⁦-⁩‎‏]/g, (c) => (c === '٫' ? '.' : c === '٬' ? ',' : ''))
+  s = s.replace(/[^\d.,-]/g, '').trim()
+  if (!s) return NaN
+
+  const neg = s.startsWith('-')
+  s = s.replace(/-/g, '')
+
+  const lastDot = s.lastIndexOf('.')
+  const lastComma = s.lastIndexOf(',')
+  const lastSep = Math.max(lastDot, lastComma)
+
+  if (lastSep === -1) {
+    const n = Number(s)
+    return neg ? -n : n
+  }
+
+  const tail = s.slice(lastSep + 1)
+  const head = s.slice(0, lastSep).replace(/[.,]/g, '')
+
+  /*
+   * ثلاث خانات بعد آخر فاصل = فاصل آلاف: «20,000» عشرون ألفاً لا عشرون.
+   * المبالغ المالية تُكتب بخانتين عشريتين، والتجميع بثلاث هو العرف.
+   * يُستثنى ما رأسه صفر وحده — «0,500» نصف لا خمسمئة.
+   */
+  const isThousands = tail.length === 3 && head !== '0' && head !== ''
+  const n = isThousands ? Number(head + tail) : Number(`${head}.${tail}`)
+  if (!Number.isFinite(n)) return NaN
+  return neg ? -n : n
+}

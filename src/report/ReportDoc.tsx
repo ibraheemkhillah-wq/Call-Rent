@@ -215,6 +215,7 @@ export function ReportDoc({
                   <th>{d.colDate}</th>
                   <th>{d.colKind}</th>
                   <th className="num">{d.colAmount(sym)}</th>
+                  <th>{t.invest.colSource}</th>
                   <th>{d.colNotes}</th>
                 </tr>
               </thead>
@@ -225,6 +226,13 @@ export function ReportDoc({
                     <td>{c.type === 'deposit' ? d.deposit : d.withdrawal}</td>
                     <td className="num">
                       {c.type === 'deposit' ? '+' : '−'} {money(c.amount, '')}
+                    </td>
+                    <td>
+                      {c.type !== 'deposit'
+                        ? '—'
+                        : c.source === 'profit'
+                          ? t.invest.badgeProfit
+                          : t.invest.badgeNew}
                     </td>
                     <td>{c.note || '—'}</td>
                   </tr>
@@ -294,6 +302,14 @@ export function ReportDoc({
                 <td>{d.unpaidProfit}</td>
                 <td className="num">{money(report.lifetime.unpaidProfit, sym)}</td>
               </tr>
+              {report.lifetime.reinvestedProfit > 0 && (
+                <tr>
+                  <td>{t.invest.reinvestedStat}</td>
+                  <td className="num">{money(report.lifetime.reinvestedProfit, sym)}</td>
+                  <td />
+                  <td />
+                </tr>
+              )}
             </tbody>
             <tfoot>
               <tr>

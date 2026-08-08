@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useStore } from '../store'
 import { useT } from '../i18n'
 import { summarizeInvestor } from '../lib/calc'
-import { dateLabel, initials, money, percent, todayIso } from '../lib/format'
+import { dateLabel, initials, money, parseAmount, percent, todayIso } from '../lib/format'
 import { Empty, Field, Modal } from '../components/ui'
 import { AddInvestment } from '../components/AddInvestment'
 import { IconEdit, IconPlus, IconTrash, IconUsers } from '../components/Icons'
@@ -32,7 +32,7 @@ export function Investors({ go }: { go: (r: Route) => void }) {
   const [initialAmount, setInitialAmount] = useState('')
   const [query, setQuery] = useState('')
   const [error, setError] = useState('')
-  const [adding, setAdding] = useState(false)
+  const [flow, setFlow] = useState<'deposit' | 'withdrawal' | null>(null)
 
   const rows = useMemo(() => {
     const list = db.investors.map((i) => summarizeInvestor(i, db.contributions, db.profits))
@@ -82,7 +82,7 @@ export function Investors({ go }: { go: (r: Route) => void }) {
       updateInvestor(editing.id, form)
     } else {
       const created = addInvestor(form)
-      const amount = Number(initialAmount)
+      const amount = parseAmount(initialAmount)
       if (Number.isFinite(amount) && amount > 0) {
         addContribution({
           investorId: created.id,
@@ -111,9 +111,12 @@ export function Investors({ go }: { go: (r: Route) => void }) {
           <p>{u.invSubtitle}</p>
         </div>
         <div className="head-actions">
-          <button className="btn btn-primary" onClick={() => setAdding(true)}>
+          <button className="btn btn-primary" onClick={() => setFlow('deposit')}>
             <IconPlus className="btn-icon" />
             {t.invest.open}
+          </button>
+          <button className="btn" onClick={() => setFlow('withdrawal')}>
+            {t.invest.withdrawOpen}
           </button>
           <button className="btn" onClick={openNew}>
             {t.investors.add}
@@ -146,7 +149,7 @@ export function Investors({ go }: { go: (r: Route) => void }) {
             }
             action={
               !query && (
-                <button className="btn btn-primary" onClick={() => setAdding(true)}>
+                <button className="btn btn-primary" onClick={() => setFlow('deposit')}>
                   <IconPlus className="btn-icon" />
                   {t.invest.open}
                 </button>
@@ -286,9 +289,8 @@ export function Investors({ go }: { go: (r: Route) => void }) {
                 hint={u.invJoinHint}
               >
                 <input
-                  type="number"
-                  min="0"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
                   value={initialAmount}
                   onChange={(e) => setInitialAmount(e.target.value)}
                   placeholder="0.00"
@@ -318,9 +320,10 @@ export function Investors({ go }: { go: (r: Route) => void }) {
         </Modal>
       )}
 
-      {adding && (
+      {flow && (
         <AddInvestment
-          onClose={() => setAdding(false)}
+          mode={flow}
+          onClose={() => setFlow(null)}
           onOpenInvestor={(id) => go({ name: 'investor', id })}
         />
       )}

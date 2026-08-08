@@ -8,6 +8,7 @@ import {
   initials,
   money,
   monthLabel,
+  parseAmount,
   percent,
   todayIso,
 } from '../lib/format'
@@ -32,6 +33,7 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
   const {
     db,
     addContribution,
+    updateContribution,
     deleteContribution,
     upsertProfit,
     deleteProfit,
@@ -96,7 +98,7 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
   }
 
   function saveCapital() {
-    const amount = Number(capForm.amount)
+    const amount = parseAmount(capForm.amount)
     if (!Number.isFinite(amount) || amount <= 0) return
     addContribution({
       investorId: id,
@@ -110,7 +112,7 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
   }
 
   function saveProfit() {
-    const amount = Number(profitForm.amount)
+    const amount = parseAmount(profitForm.amount)
     if (!Number.isFinite(amount)) return
     upsertProfit({
       investorId: id,
@@ -192,7 +194,12 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
         <Stat
           label={u.detUnpaidStat}
           value={money(summary.unpaidProfit, sym)}
-          foot={u.detPaidOut(money(summary.paidProfit, sym))}
+          foot={
+            /* المُعاد استثماره خرج من المستحق، فيُذكر هنا كي لا يبدو ناقصاً */
+            summary.reinvestedProfit > 0
+              ? `${u.detPaidOut(money(summary.paidProfit, sym))} • ${t.invest.reinvestedStat}: ${money(summary.reinvestedProfit, sym)}`
+              : u.detPaidOut(money(summary.paidProfit, sym))
+          }
           icon={<IconClock size={16} />}
         />
       </div>
@@ -377,6 +384,7 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
                   <th>{t.investor.date}</th>
                   <th>{u.detColType}</th>
                   <th className="num">{t.investor.amount}</th>
+                  <th>{t.invest.colSource}</th>
                   <th>{t.investor.note}</th>
                   <th></th>
                 </tr>
@@ -394,6 +402,28 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
                     </td>
                     <td className={c.type === 'deposit' ? 'num pos' : 'num neg'}>
                       {c.type === 'deposit' ? '+' : '−'} {money(c.amount, sym)}
+                    </td>
+                    <td>
+                      {c.type === 'deposit' ? (
+                        /* المصدر يُبدَّل بعد التسجيل: النقر يقلبه بين الحالتين */
+                        <button
+                          className={
+                            c.source === 'profit' ? 'src-tag is-profit' : 'src-tag'
+                          }
+                          title={t.invest.sourceLabel}
+                          onClick={() =>
+                            updateContribution(c.id, {
+                              source: c.source === 'profit' ? 'new' : 'profit',
+                            })
+                          }
+                        >
+                          {c.source === 'profit'
+                            ? t.invest.badgeProfit
+                            : t.invest.badgeNew}
+                        </button>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
                     </td>
                     <td className="muted">{c.note || '—'}</td>
                     <td>
@@ -462,9 +492,8 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
             </Field>
             <Field label={u.detAmountOf(sym)}>
               <input
-                type="number"
-                min="0"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 value={capForm.amount}
                 onChange={(e) => setCapForm({ ...capForm, amount: e.target.value })}
                 placeholder="0.00"
@@ -509,7 +538,7 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
               label={u.detProfitAmountOf(sym)}
               hint={(() => {
                 const cap = capitalAtMonthEnd(contribsOfInvestor, profitForm.month)
-                const amt = Number(profitForm.amount)
+                const amt = parseAmount(profitForm.amount)
                 if (cap <= 0) return u.detNoCapitalMonth
                 if (!Number.isFinite(amt) || amt === 0)
                   return u.detCapitalThisMonth(money(cap, sym))
@@ -517,8 +546,8 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
               })()}
             >
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 value={profitForm.amount}
                 onChange={(e) => setProfitForm({ ...profitForm, amount: e.target.value })}
                 placeholder="0.00"

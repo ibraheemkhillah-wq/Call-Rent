@@ -1337,3 +1337,78 @@ tfoot td {
     grid-template-columns: 1fr;
   }
 }
+
+/* اختيار مصدر المبلغ — جديد أم من العوائد */
+.seg-label {
+  margin-bottom: 7px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+.seg {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.seg-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  text-align: start;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.seg-btn:hover {
+  border-color: var(--line-strong);
+}
+
+.seg-btn.is-on {
+  border-color: var(--accent-dark);
+  background: var(--accent-soft);
+}
+
+.seg-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--heading);
+}
+
+.seg-sub {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.warn-text {
+  color: var(--warn);
+}
+
+/* شارة مصدر الدفعة في الجداول */
+.src-tag {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.src-tag.is-profit {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+@media (max-width: 640px) {
+  .seg {
+    grid-template-columns: 1fr;
+  }
+}

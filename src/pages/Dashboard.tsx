@@ -20,7 +20,7 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
   const t = useT()
   const u = t.ui
   const sym = db.settings.currencySymbol || '$'
-  const [adding, setAdding] = useState(false)
+  const [flow, setFlow] = useState<'deposit' | 'withdrawal' | null>(null)
 
   const stats = useMemo(
     () => portfolioStats(db.investors, db.contributions, db.profits),
@@ -60,7 +60,7 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
               title={u.dashEmptyTitle}
               text={u.dashEmptyText}
               action={
-                <button className="btn btn-primary" onClick={() => setAdding(true)}>
+                <button className="btn btn-primary" onClick={() => setFlow('deposit')}>
                   <IconPlus className="btn-icon" />
                   {t.invest.open}
                 </button>
@@ -76,9 +76,13 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
             <p>{u.dashSubtitle}</p>
           </div>
           <div className="head-actions">
-            <button className="btn btn-primary" onClick={() => setAdding(true)}>
+            <button className="btn btn-primary" onClick={() => setFlow('deposit')}>
               <IconPlus className="btn-icon" />
               {t.invest.open}
+            </button>
+            <button className="btn" onClick={() => setFlow('withdrawal')}>
+              <IconWallet className="btn-icon" />
+              {t.invest.withdrawOpen}
             </button>
             <button className="btn" onClick={() => go({ name: 'profits' })}>
               {u.dashRecordProfits}
@@ -225,9 +229,10 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
         </>
       )}
 
-      {adding && (
+      {flow && (
         <AddInvestment
-          onClose={() => setAdding(false)}
+          mode={flow}
+          onClose={() => setFlow(null)}
           onOpenInvestor={(id) => go({ name: 'investor', id })}
         />
       )}

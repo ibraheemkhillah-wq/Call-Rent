@@ -231,7 +231,9 @@ export interface InvestorSummary {
   totalProfit: number
   /** الأرباح المصروفة فعلياً */
   paidProfit: number
-  /** الأرباح المستحقة غير المصروفة */
+  /** ما أُعيد استثماره من الأرباح فصار رأس مال */
+  reinvestedProfit: number
+  /** الأرباح المستحقة غير المصروفة ولا المُعاد استثمارها */
   unpaidProfit: number
   /** العائد التراكمي = إجمالي الأرباح ÷ رأس المال الحالي */
   lifetimeReturnPct: number
@@ -264,6 +266,18 @@ export function summarizeInvestor(
   const totalProfit = myProfits.reduce((s, p) => s + p.amount, 0)
   const paidProfit = myProfits.filter((p) => p.paid).reduce((s, p) => s + p.amount, 0)
 
+  /*
+   * ربح أُعيد استثماره لم يعد مستحقاً: صار رأس مال. لولا خصمه هنا لظهر
+   * المبلغ مرتين — مرة في رأس المال ومرة في المستحق — فتنتفخ القيمة
+   * الإجمالية بمقداره. لا يتجاوز الخصم ما تبقّى غير مصروف.
+   */
+  const reinvestedProfit = Math.min(
+    mine
+      .filter((c) => c.type === 'deposit' && c.source === 'profit')
+      .reduce((s, c) => s + c.amount, 0),
+    Math.max(totalProfit - paidProfit, 0),
+  )
+
   const monthlyPcts = myProfits.map((p) => {
     const cap = capitalAtMonthEnd(mine, p.month)
     return cap > 0 ? (p.amount / cap) * 100 : 0
@@ -278,7 +292,8 @@ export function summarizeInvestor(
     currentCapital,
     totalProfit,
     paidProfit,
-    unpaidProfit: totalProfit - paidProfit,
+    reinvestedProfit,
+    unpaidProfit: totalProfit - paidProfit - reinvestedProfit,
     lifetimeReturnPct: currentCapital > 0 ? (totalProfit / currentCapital) * 100 : 0,
     activeMonths: myProfits.length,
     avgMonthlyPct,

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '../store'
 import { useT } from '../i18n'
 import { capitalAtMonthEnd } from '../lib/calc'
-import { currentMonthKey, money, monthLabel, percent } from '../lib/format'
+import { currentMonthKey, money, monthLabel, parseAmount, percent } from '../lib/format'
 import { Empty, Field } from '../components/ui'
 import { IconCheck, IconChart, IconUsers } from '../components/Icons'
 import type { Route } from '../App'
@@ -46,10 +46,10 @@ export function Profits({ go }: { go: (r: Route) => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [month, db.investors.length])
 
-  const totalDraft = rows.reduce((s, r) => s + (Number(draft[r.investor.id]) || 0), 0)
+  const totalDraft = rows.reduce((s, r) => s + (parseAmount(draft[r.investor.id]) || 0), 0)
 
   function distribute() {
-    const pool = Number(poolAmount)
+    const pool = parseAmount(poolAmount)
     if (!Number.isFinite(pool) || pool <= 0 || totalCapital <= 0) return
     const next: Record<string, string> = { ...draft }
     for (const r of rows) {
@@ -63,7 +63,7 @@ export function Profits({ go }: { go: (r: Route) => void }) {
   function save() {
     const payload = rows
       .filter((r) => draft[r.investor.id] !== '' && draft[r.investor.id] !== undefined)
-      .map((r) => ({ investorId: r.investor.id, amount: Number(draft[r.investor.id]) || 0 }))
+      .map((r) => ({ investorId: r.investor.id, amount: parseAmount(draft[r.investor.id]) || 0 }))
     bulkUpsertProfits(month, payload)
     setSaved(true)
   }
@@ -122,9 +122,8 @@ export function Profits({ go }: { go: (r: Route) => void }) {
           hint={u.profDistributeHint}
         >
           <input
-            type="number"
-            step="0.01"
-            min="0"
+            type="text"
+            inputMode="decimal"
             value={poolAmount}
             onChange={(e) => setPoolAmount(e.target.value)}
             placeholder="0.00"
@@ -158,7 +157,7 @@ export function Profits({ go }: { go: (r: Route) => void }) {
             </thead>
             <tbody>
               {rows.map((r) => {
-                const amt = Number(draft[r.investor.id]) || 0
+                const amt = parseAmount(draft[r.investor.id]) || 0
                 const pct = r.capital > 0 ? (amt / r.capital) * 100 : 0
                 const share = totalCapital > 0 ? (r.capital / totalCapital) * 100 : 0
                 return (
@@ -173,8 +172,8 @@ export function Profits({ go }: { go: (r: Route) => void }) {
                     <td className="num muted">{percent(share, 1)}</td>
                     <td>
                       <input
-                        type="number"
-                        step="0.01"
+                        type="text"
+                        inputMode="decimal"
                         value={draft[r.investor.id] ?? ''}
                         onChange={(e) => {
                           setDraft({ ...draft, [r.investor.id]: e.target.value })

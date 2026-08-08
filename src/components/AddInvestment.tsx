@@ -1,22 +1,26 @@
 /**
- * إضافة مبلغ استثماري.
+ * حركة رأس المال — إضافة مبلغ استثماري أو سحب منه.
  *
- * مدخل واحد لكل مال داخل إلى المحفظة، يسأل أولاً لمن هذا المبلغ: مستثمر
- * جديد يُفتح له ملف، أو مستثمر قائم يُضاف المبلغ فوق دفعاته. في الحالتين
- * ينتهي الأمر إلى إيداع واحد بتاريخه، فيلتقطه محرّك الدفعات كما هو ويحسب
- * عوائده من تاريخه وحده — لا حساب موازٍ ولا مسار ثانٍ للأرقام.
+ * مدخل واحد لكل مال يدخل المحفظة أو يخرج منها. الإضافة تسأل أولاً لمن
+ * هذا المبلغ: مستثمر جديد يُفتح له ملف، أو مستثمر قائم يُضاف فوق دفعاته.
+ * السحب يبدأ من اختيار المستثمر مباشرة — لا يُسحب ممّن ليس له رأس مال.
+ *
+ * في كل الحالات ينتهي الأمر إلى حركة واحدة بتاريخها، فيلتقطها محرّك
+ * الدفعات كما هي — لا حساب موازٍ ولا مسار ثانٍ للأرقام.
  */
 
 import { useMemo, useState } from 'react'
 import { useStore } from '../store'
 import { useT } from '../i18n'
-import { summarizeInvestor } from '../lib/calc'
-import { dateLabel, initials, money, todayIso } from '../lib/format'
+import { summarizeInvestor, trancheBreakdown } from '../lib/calc'
+import { dateLabel, initials, money, parseAmount, todayIso } from '../lib/format'
 import { Field, Modal } from './ui'
 import { IconCheck, IconPlus, IconUsers, IconWallet } from './Icons'
 import type { Investor } from '../types'
 
 type Step = 'choose' | 'new' | 'old' | 'done'
+type Mode = 'deposit' | 'withdrawal'
+type Source = 'new' | 'profit'
 
 const blankPerson = {
   name: '',
@@ -28,35 +32,43 @@ const blankPerson = {
 }
 
 export function AddInvestment({
+  mode = 'deposit',
   onClose,
   onOpenInvestor,
 }: {
+  /** اتجاه الحركة — إضافة افتراضاً */
+  mode?: Mode
   onClose: () => void
-  /** يفتح صفحة المستثمر بعد الإضافة — اختياري */
+  /** يفتح صفحة المستثمر بعد الحركة — اختياري */
   onOpenInvestor?: (id: string) => void
 }) {
   const t = useT()
   const v = t.invest
   const { db, addInvestor, addContribution } = useStore()
   const sym = db.settings.currencySymbol || '$'
+  const isWithdraw = mode === 'withdrawal'
 
-  const [step, setStep] = useState<Step>('choose')
+  // السحب لا يمرّ بخطوة الاختيار: لا معنى لسحبٍ من مستثمر لم يوجد بعد
+  const [step, setStep] = useState<Step>(isWithdraw ? 'old' : 'choose')
   const [person, setPerson] = useState({ ...blankPerson })
   const [pickedId, setPickedId] = useState('')
   const [query, setQuery] = useState('')
   const [amount, setAmount] = useState('')
+  const [source, setSource] = useState<Source>('new')
   const [date, setDate] = useState(todayIso())
   const [note, setNote] = useState('')
   const [error, setError] = useState('')
   const [done, setDone] = useState<{ id: string; name: string; amount: number } | null>(null)
 
-  /** ملخّصات المستثمرين — منها رأس المال الحالي وعدد الدفعات السابقة */
+  /** ملخّصات المستثمرين — منها رأس المال الحالي والمستحق من الأرباح */
   const summaries = useMemo(
     () =>
       db.investors
         .map((i) => summarizeInvestor(i, db.contributions, db.profits))
+        // السحب يعرض من له رأس مال فقط
+        .filter((s) => !isWithdraw || s.currentCapital > 0)
         .sort((a, b) => b.currentCapital - a.currentCapital),
-    [db.investors, db.contributions, db.profits],
+    [db.investors, db.contributions, db.profits, isWithdraw],
   )
 
   const matches = useMemo(() => {
@@ -72,16 +84,32 @@ export function AddInvestment({
   }, [summaries, query])
 
   const picked = summaries.find((s) => s.investor.id === pickedId) ?? null
-  const parsed = Number(amount)
+  const parsed = parseAmount(amount)
   const validAmount = Number.isFinite(parsed) && parsed > 0
   const depositCount = (id: string) =>
     db.contributions.filter((c) => c.investorId === id && c.type === 'deposit').length
+
+  /** الدفعات التي سيستهلكها السحب، من الأقدم فالأحدث */
+  const withdrawPlan = useMemo(() => {
+    if (!isWithdraw || !picked || !validAmount) return []
+    const tranches = trancheBreakdown(picked.investor, db.contributions, db.profits)
+    let left = parsed
+    const plan: { index: number; amount: number }[] = []
+    tranches.forEach((tr, i) => {
+      if (left <= 0 || tr.remaining <= 0) return
+      const take = Math.min(tr.remaining, left)
+      left -= take
+      plan.push({ index: i + 1, amount: take })
+    })
+    return plan
+  }, [isWithdraw, picked, validAmount, parsed, db.contributions, db.profits])
 
   function reset() {
     setPerson({ ...blankPerson })
     setPickedId('')
     setQuery('')
     setAmount('')
+    setSource('new')
     setDate(todayIso())
     setNote('')
     setError('')
@@ -89,7 +117,7 @@ export function AddInvestment({
 
   function goChoose() {
     reset()
-    setStep('choose')
+    setStep(isWithdraw ? 'old' : 'choose')
   }
 
   function submitNew() {
@@ -103,6 +131,8 @@ export function AddInvestment({
       date,
       amount: parsed,
       type: 'deposit',
+      // أول دفعة لمستثمر جديد لا تأتي من عوائد لم توجد بعد
+      source: 'new',
       note: note.trim() || v.noteFirst,
     })
     setDone({ id: created.id, name: created.name, amount: parsed })
@@ -113,33 +143,38 @@ export function AddInvestment({
     if (!picked) return setError(v.errPick)
     if (!validAmount) return setError(v.errAmount)
     if (!date) return setError(v.errDate)
+    if (isWithdraw && parsed > picked.currentCapital) {
+      return setError(v.errTooMuch(money(picked.currentCapital, sym)))
+    }
 
     addContribution({
       investorId: picked.investor.id,
       date,
       amount: parsed,
-      type: 'deposit',
-      note: note.trim() || v.noteExtra,
+      type: isWithdraw ? 'withdrawal' : 'deposit',
+      ...(isWithdraw ? {} : { source }),
+      note: note.trim() || (isWithdraw ? v.noteWithdraw : v.noteExtra),
     })
     setDone({ id: picked.investor.id, name: picked.investor.name, amount: parsed })
     setStep('done')
   }
 
-  /* ─────────────── الحقول المشتركة بين المسارين ─────────────── */
+  /* ─────────────── الحقول المشتركة ─────────────── */
   const amountFields = (
     <div className="grid grid-2">
-      <Field label={v.amount(sym)}>
+      <Field label={isWithdraw ? v.withdrawAmount(sym) : v.amount(sym)}>
         <input
-          type="number"
-          min="0"
-          step="0.01"
+          type="text"
           inputMode="decimal"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e) => {
+            setAmount(e.target.value)
+            setError('')
+          }}
           placeholder="0.00"
         />
       </Field>
-      <Field label={v.date}>
+      <Field label={isWithdraw ? v.withdrawDate : v.date}>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       </Field>
     </div>
@@ -151,14 +186,48 @@ export function AddInvestment({
         <input
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder={v.notePlaceholder}
+          placeholder={isWithdraw ? v.withdrawNotePlaceholder : v.notePlaceholder}
         />
       </Field>
     </div>
   )
 
-  const title =
-    step === 'done' ? v.title : step === 'choose' ? v.chooseTitle : v.title
+  /* اختيار مصدر المبلغ — للإيداع على مستثمر قائم وحده */
+  const owed = picked?.unpaidProfit ?? 0
+  const sourcePicker = (
+    <div style={{ marginTop: 16 }}>
+      <div className="seg-label">{v.sourceLabel}</div>
+      <div className="seg">
+        <button
+          className={source === 'new' ? 'seg-btn is-on' : 'seg-btn'}
+          onClick={() => setSource('new')}
+        >
+          <span className="seg-title">{v.sourceNew}</span>
+          <span className="seg-sub">{v.sourceNewSub}</span>
+        </button>
+        <button
+          className={source === 'profit' ? 'seg-btn is-on' : 'seg-btn'}
+          onClick={() => setSource('profit')}
+        >
+          <span className="seg-title">{v.sourceProfit}</span>
+          <span className="seg-sub">
+            {picked ? v.sourceAvailable(money(owed, sym)) : v.sourceProfitSub}
+          </span>
+        </button>
+      </div>
+      {source === 'profit' && (
+        <p className="hint" style={{ marginTop: 8 }}>
+          {validAmount && parsed > owed ? (
+            <span className="warn-text">{v.sourceOver(money(owed, sym))}</span>
+          ) : (
+            v.sourceNote
+          )}
+        </p>
+      )}
+    </div>
+  )
+
+  const title = isWithdraw ? v.withdrawTitle : step === 'choose' ? v.chooseTitle : v.title
 
   return (
     <Modal
@@ -186,7 +255,7 @@ export function AddInvestment({
               }}
             >
               <IconPlus className="btn-icon" />
-              {v.addAnother}
+              {isWithdraw ? v.withdrawAnother : v.addAnother}
             </button>
             <button className="btn" onClick={onClose}>
               {t.common.close}
@@ -198,17 +267,23 @@ export function AddInvestment({
               className="btn btn-primary"
               onClick={step === 'new' ? submitNew : submitOld}
             >
-              {step === 'new' ? v.submitNew : v.submitOld}
+              {isWithdraw ? v.withdrawSubmit : step === 'new' ? v.submitNew : v.submitOld}
             </button>
-            <button className="btn" onClick={goChoose}>
-              {v.back}
-            </button>
+            {isWithdraw ? (
+              <button className="btn" onClick={onClose}>
+                {t.common.cancel}
+              </button>
+            ) : (
+              <button className="btn" onClick={goChoose}>
+                {v.back}
+              </button>
+            )}
             {error && <span className="neg">{error}</span>}
           </>
         )
       }
     >
-      {/* ═══════ الخطوة الأولى: جديد أم قديم ═══════ */}
+      {/* ═══════ الخطوة الأولى: جديد أم قائم ═══════ */}
       {step === 'choose' && (
         <>
           <p className="muted" style={{ marginTop: 0 }}>
@@ -292,10 +367,10 @@ export function AddInvestment({
         </>
       )}
 
-      {/* ═══════ مستثمر قائم ═══════ */}
+      {/* ═══════ مستثمر قائم — إضافة أو سحب ═══════ */}
       {step === 'old' && (
         <>
-          <Field label={v.pickLabel}>
+          <Field label={isWithdraw ? v.withdrawChoose : v.pickLabel}>
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -307,7 +382,7 @@ export function AddInvestment({
           <div className="pick-list">
             {matches.length === 0 ? (
               <p className="muted" style={{ padding: '10px 2px' }}>
-                {v.pickNoMatch}
+                {summaries.length === 0 && isWithdraw ? v.withdrawNone : v.pickNoMatch}
               </p>
             ) : (
               matches.map((s) => {
@@ -315,9 +390,7 @@ export function AddInvestment({
                 return (
                   <button
                     key={s.investor.id}
-                    className={
-                      s.investor.id === pickedId ? 'pick-row is-picked' : 'pick-row'
-                    }
+                    className={s.investor.id === pickedId ? 'pick-row is-picked' : 'pick-row'}
                     onClick={() => {
                       setPickedId(s.investor.id)
                       setError('')
@@ -343,31 +416,75 @@ export function AddInvestment({
           </div>
 
           <div style={{ marginTop: 14 }}>{amountFields}</div>
+
+          {isWithdraw && picked && (
+            <button
+              className="btn btn-sm"
+              style={{ marginTop: 8 }}
+              onClick={() => {
+                setAmount(String(picked.currentCapital))
+                setError('')
+              }}
+            >
+              {v.withdrawAll} — {money(picked.currentCapital, sym)}
+            </button>
+          )}
+
+          {!isWithdraw && sourcePicker}
           {noteField}
 
-          {/* أثر الإضافة — يُقرأ قبل الحفظ لا بعده */}
+          {/* أثر الحركة — يُقرأ قبل الحفظ لا بعده */}
           {picked && validAmount && (
             <div className="effect">
-              <div className="effect-title">{v.effectTitle}</div>
+              <div className="effect-title">{isWithdraw ? v.withdrawEffectTitle : v.effectTitle}</div>
               <div className="effect-row">
                 <span>{v.effectBefore}</span>
                 <b className="num">{money(picked.currentCapital, sym)}</b>
               </div>
               <div className="effect-row">
                 <span>{v.effectAfter}</span>
-                <b className="num accent">{money(picked.currentCapital + parsed, sym)}</b>
-              </div>
-              <div className="effect-row">
-                <span>{v.effectTranche(depositCount(picked.investor.id) + 1)}</span>
-                <b className="num">
-                  {money(parsed, sym)} — {dateLabel(date)}
+                <b className="num accent">
+                  {money(
+                    isWithdraw
+                      ? Math.max(picked.currentCapital - parsed, 0)
+                      : picked.currentCapital + parsed,
+                    sym,
+                  )}
                 </b>
               </div>
+
+              {isWithdraw ? (
+                withdrawPlan.map((p) => (
+                  <div className="effect-row" key={p.index}>
+                    <span>{v.withdrawEffectFrom}</span>
+                    <b className="num">
+                      {v.withdrawEffectTranche(p.index, money(p.amount, sym))}
+                    </b>
+                  </div>
+                ))
+              ) : (
+                <>
+                  <div className="effect-row">
+                    <span>{v.effectTranche(depositCount(picked.investor.id) + 1)}</span>
+                    <b className="num">
+                      {money(parsed, sym)} — {dateLabel(date)}
+                    </b>
+                  </div>
+                  {source === 'profit' && (
+                    <div className="effect-row">
+                      <span>{t.investor.due}</span>
+                      <b className="num">
+                        {money(owed, sym)} ← {money(Math.max(owed - parsed, 0), sym)}
+                      </b>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
 
           <p className="hint" style={{ marginTop: 12 }}>
-            {v.trancheHint}
+            {isWithdraw ? v.withdrawHint : v.trancheHint}
           </p>
         </>
       )}
@@ -379,9 +496,11 @@ export function AddInvestment({
             <IconCheck size={26} />
           </div>
           <p className="done-text">
-            {depositCount(done.id) > 1
-              ? v.doneOld(done.name, money(done.amount, sym))
-              : v.doneNew(done.name, money(done.amount, sym))}
+            {isWithdraw
+              ? v.doneWithdraw(done.name, money(done.amount, sym))
+              : depositCount(done.id) > 1
+                ? v.doneOld(done.name, money(done.amount, sym))
+                : v.doneNew(done.name, money(done.amount, sym))}
           </p>
           <p className="muted num">
             <IconWallet size={14} />{' '}
