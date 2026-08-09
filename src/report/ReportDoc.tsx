@@ -303,8 +303,14 @@ export function ReportDoc({
               <tr>
                 <td>{d.avgMonthly}</td>
                 <td className="num">{percent(report.lifetime.avgMonthlyPct)}</td>
-                <td>{d.unpaidProfit}</td>
-                <td className="num">{money(report.lifetime.unpaidProfit, sym)}</td>
+                {/*
+                 * الأرباح المستحقة غير المصروفة مُبرزة: هذا وحده ما يُسلَّم
+                 * للمستثمر، فيُقرأ من التقرير بنظرة واحدة لا بحثاً في جدول.
+                 */}
+                <td className="due-cell due-label">{d.unpaidProfit}</td>
+                <td className="num due-cell due-amount">
+                  {money(report.lifetime.unpaidProfit, sym)}
+                </td>
               </tr>
               {report.lifetime.reinvestedProfit > 0 && (
                 <tr>
