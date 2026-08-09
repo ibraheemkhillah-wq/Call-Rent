@@ -542,3 +542,283 @@ export function performanceSeries(
   const firstActive = points.findIndex((p) => p.capital > 0)
   return firstActive > 0 ? points.slice(firstActive) : points
 }
+
+/* ────────────────────────── تقرير المحفظة ────────────────────────── */
+
+/** شهر من عمر المحفظة كلها */
+export interface PortfolioMonthRow {
+  month: MonthKey
+  /** رأس مال المحفظة في نهاية الشهر */
+  capital: number
+  /** مجموع أرباح المستثمرين في ذلك الشهر */
+  profit: number
+  /** نسبة الشهر = الربح ÷ رأس المال */
+  pct: number
+  /** عدد من له رأس مال قائم في ذلك الشهر */
+  investors: number
+  /** هل سُجّل ربح لأحد في هذا الشهر */
+  hasEntry: boolean
+}
+
+/** سطر مستثمر في جدول تقرير المحفظة */
+export interface PortfolioInvestorRow {
+  investor: Investor
+  /** أول إيداع فعلي — أدقّ من تاريخ الانضمام المُدخَل يدوياً */
+  firstDeposit: string
+  totalDeposited: number
+  /** رأس ماله في نهاية الفترة */
+  capital: number
+  /** حصته من رأس مال المحفظة في نهاية الفترة */
+  sharePct: number
+  /** ربحه خلال الفترة وحدها */
+  periodProfit: number
+  /** ربحه منذ البداية */
+  lifetimeProfit: number
+  /** عائده التراكمي على رأس ماله القائم */
+  lifetimeReturnPct: number
+  /** المستحق له غير المصروف */
+  unpaidProfit: number
+}
+
+export interface PortfolioReport {
+  type: PeriodType
+  year: number
+  index: number
+  label: string
+  months: PortfolioMonthRow[]
+
+  /** رأس المال قبل بداية الفترة وبعد نهايتها */
+  openingCapital: number
+  closingCapital: number
+  /** متوسط رأس المال على الأشهر ذات رأس مال فعلي */
+  averageCapital: number
+  /** نموّ رأس المال خلال الفترة */
+  growthPct: number
+
+  /** حركة رأس المال خلال الفترة */
+  deposits: number
+  withdrawals: number
+  netFlow: number
+
+  /** أرباح الفترة */
+  totalProfit: number
+  paidProfit: number
+  unpaidProfit: number
+  returnPct: number
+  annualizedPct: number
+
+  /** عدد المستثمرين */
+  investorCount: number
+  activeCount: number
+  /** من دخل المحفظة خلال الفترة */
+  newInvestors: number
+  /** من له رأس مال قائم في نهاية الفترة */
+  fundedCount: number
+
+  rows: PortfolioInvestorRow[]
+
+  /** أرقام المحفظة منذ بداية النشاط */
+  lifetime: {
+    totalDeposited: number
+    totalWithdrawn: number
+    currentCapital: number
+    totalProfit: number
+    paidProfit: number
+    reinvestedProfit: number
+    unpaidProfit: number
+    returnPct: number
+    avgMonthlyPct: number
+    monthsRecorded: number
+    firstMonth: MonthKey | null
+  }
+}
+
+/**
+ * يبني تقرير المحفظة كاملة لفترة.
+ *
+ * أرقام المحفظة مجاميع لا متوسطات لمتوسطات: نسبة الشهر هي مجموع أرباح
+ * المستثمرين ÷ مجموع رؤوس أموالهم — لا متوسط نسبهم. الفرق ليس تجميلياً:
+ * متوسط النسب يعطي صاحب الألف وزن صاحب المئة ألف.
+ */
+export function buildPortfolioReport(
+  investors: Investor[],
+  contributions: Contribution[],
+  profits: ProfitEntry[],
+  type: PeriodType,
+  year: number,
+  index: number,
+): PortfolioReport {
+  const monthKeys = monthsOfPeriod(type, year, index)
+  const lastMonth = monthKeys[monthKeys.length - 1]
+  const periodEnd = endOfMonth(lastMonth)
+
+  const months: PortfolioMonthRow[] = monthKeys.map((month) => {
+    const capital = capitalAtMonthEnd(contributions, month)
+    const entries = profits.filter((p) => p.month === month)
+    const profit = entries.reduce((s, p) => s + p.amount, 0)
+    const funded = investors.filter(
+      (i) => capitalAtMonthEnd(contributions.filter((c) => c.investorId === i.id), month) > 0,
+    ).length
+    return {
+      month,
+      capital,
+      profit,
+      pct: capital > 0 ? (profit / capital) * 100 : 0,
+      investors: funded,
+      hasEntry: entries.length > 0,
+    }
+  })
+
+  const [fy, fm] = monthKeys[0].split('-').map(Number)
+  const prev = new Date(Date.UTC(fy, fm - 2, 1))
+  const prevMonth = `${prev.getUTCFullYear()}-${String(prev.getUTCMonth() + 1).padStart(2, '0')}`
+  const openingCapital = capitalAsOf(contributions, endOfMonth(prevMonth))
+  const closingCapital = months[months.length - 1].capital
+
+  const capitalized = months.filter((m) => m.capital > 0)
+  const averageCapital =
+    capitalized.length > 0
+      ? capitalized.reduce((s, m) => s + m.capital, 0) / capitalized.length
+      : 0
+
+  const inPeriod = contributions.filter((c) => monthKeys.includes(monthKeyOf(c.date)))
+  const deposits = inPeriod
+    .filter((c) => c.type === 'deposit')
+    .reduce((s, c) => s + c.amount, 0)
+  const withdrawals = inPeriod
+    .filter((c) => c.type === 'withdrawal')
+    .reduce((s, c) => s + c.amount, 0)
+
+  const periodProfits = profits.filter((p) => monthKeys.includes(p.month))
+  const totalProfit = periodProfits.reduce((s, p) => s + p.amount, 0)
+  const paidProfit = periodProfits.filter((p) => p.paid).reduce((s, p) => s + p.amount, 0)
+  const returnPct = averageCapital > 0 ? (totalProfit / averageCapital) * 100 : 0
+
+  /* من ظهر أول إيداع له داخل الفترة فهو داخلٌ جديد فيها */
+  const firstDepositOf = (id: string) => {
+    const mine = contributions
+      .filter((c) => c.investorId === id && c.type === 'deposit')
+      .sort((a, b) => a.date.localeCompare(b.date))
+    return mine[0]?.date ?? ''
+  }
+
+  const summaries = investors.map((i) => summarizeInvestor(i, contributions, profits))
+
+  const rows: PortfolioInvestorRow[] = investors
+    .map((investor, i) => {
+      const mine = contributions.filter((c) => c.investorId === investor.id)
+      const s = summaries[i]
+      const capital = capitalAsOf(mine, periodEnd)
+      const periodProfit = profits
+        .filter((p) => p.investorId === investor.id && monthKeys.includes(p.month))
+        .reduce((sum, p) => sum + p.amount, 0)
+      return {
+        investor,
+        firstDeposit: firstDepositOf(investor.id) || investor.joinDate,
+        totalDeposited: s.totalDeposited,
+        capital,
+        sharePct: closingCapital > 0 ? (capital / closingCapital) * 100 : 0,
+        periodProfit,
+        lifetimeProfit: s.totalProfit,
+        lifetimeReturnPct: s.lifetimeReturnPct,
+        unpaidProfit: s.unpaidProfit,
+      }
+    })
+    .sort((a, b) => b.capital - a.capital)
+
+  const newInvestors = rows.filter(
+    (r) => r.firstDeposit && monthKeys.includes(monthKeyOf(r.firstDeposit)),
+  ).length
+
+  /* أرقام المحفظة منذ بداية النشاط */
+  const totalDeposited = summaries.reduce((s, x) => s + x.totalDeposited, 0)
+  const totalWithdrawn = summaries.reduce((s, x) => s + x.totalWithdrawn, 0)
+  const currentCapital = summaries.reduce((s, x) => s + x.currentCapital, 0)
+  const lifeProfit = summaries.reduce((s, x) => s + x.totalProfit, 0)
+  const lifePaid = summaries.reduce((s, x) => s + x.paidProfit, 0)
+  const lifeReinvested = summaries.reduce((s, x) => s + x.reinvestedProfit, 0)
+  const lifeUnpaid = summaries.reduce((s, x) => s + x.unpaidProfit, 0)
+
+  const allMonths = [...new Set(profits.map((p) => p.month))].sort()
+  /* المتوسط الشهري للمحفظة: مجموع أرباح الشهر ÷ مجموع رأس ماله */
+  const monthlyPcts = allMonths.map((month) => {
+    const cap = capitalAtMonthEnd(contributions, month)
+    const pr = profits.filter((p) => p.month === month).reduce((s, p) => s + p.amount, 0)
+    return cap > 0 ? (pr / cap) * 100 : 0
+  })
+
+  return {
+    type,
+    year,
+    index,
+    label: periodLabel(type, year, index),
+    months,
+    openingCapital,
+    closingCapital,
+    averageCapital,
+    growthPct: openingCapital > 0 ? ((closingCapital - openingCapital) / openingCapital) * 100 : 0,
+    deposits,
+    withdrawals,
+    netFlow: deposits - withdrawals,
+    totalProfit,
+    paidProfit,
+    unpaidProfit: totalProfit - paidProfit,
+    returnPct,
+    annualizedPct: returnPct * annualizeFactor(type),
+    investorCount: investors.length,
+    activeCount: investors.filter((i) => i.active).length,
+    newInvestors,
+    fundedCount: rows.filter((r) => r.capital > 0).length,
+    rows,
+    lifetime: {
+      totalDeposited,
+      totalWithdrawn,
+      currentCapital,
+      totalProfit: lifeProfit,
+      paidProfit: lifePaid,
+      reinvestedProfit: lifeReinvested,
+      unpaidProfit: lifeUnpaid,
+      returnPct: currentCapital > 0 ? (lifeProfit / currentCapital) * 100 : 0,
+      avgMonthlyPct:
+        monthlyPcts.length > 0
+          ? monthlyPcts.reduce((s, v) => s + v, 0) / monthlyPcts.length
+          : 0,
+      monthsRecorded: allMonths.length,
+      firstMonth: allMonths[0] ?? null,
+    },
+  }
+}
+
+/** سلسلة أداء المحفظة كلها — نفس شكل سلسلة المستثمر ليُعاد استعمال الرسم */
+export function portfolioSeries(
+  contributions: Contribution[],
+  profits: ProfitEntry[],
+  type: PeriodType,
+  year: number,
+  index: number,
+  count = 12,
+): SeriesPoint[] {
+  const periodMonths = monthsOfPeriod(type, year, index)
+  const last = periodMonths[periodMonths.length - 1]
+  const [ly, lm] = last.split('-').map(Number)
+  const points: SeriesPoint[] = []
+
+  for (let back = count - 1; back >= 0; back--) {
+    const d = new Date(Date.UTC(ly, lm - 1 - back, 1))
+    const month = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
+    const entries = profits.filter((p) => p.month === month)
+    const capital = capitalAtMonthEnd(contributions, month)
+    const profit = entries.reduce((s, p) => s + p.amount, 0)
+    points.push({
+      month,
+      profit,
+      capital,
+      pct: capital > 0 ? (profit / capital) * 100 : 0,
+      hasEntry: entries.length > 0,
+      inPeriod: periodMonths.includes(month),
+    })
+  }
+
+  const firstActive = points.findIndex((p) => p.capital > 0)
+  return firstActive > 0 ? points.slice(firstActive) : points
+}

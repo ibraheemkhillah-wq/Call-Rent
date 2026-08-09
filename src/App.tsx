@@ -15,6 +15,7 @@ import { Dashboard } from './pages/Dashboard'
 import { Investors } from './pages/Investors'
 import { InvestorDetail } from './pages/InvestorDetail'
 import { Profits } from './pages/Profits'
+import { Portfolio } from './pages/Portfolio'
 import { Reports } from './pages/Reports'
 import { SettingsPage } from './pages/Settings'
 
@@ -24,6 +25,7 @@ export type Route =
   | { name: 'investor'; id: string }
   | { name: 'profits' }
   | { name: 'reports'; investorId?: string }
+  | { name: 'portfolio' }
   | { name: 'settings' }
 
 const NAV: { key: Route['name']; icon: typeof IconDashboard }[] = [
@@ -46,6 +48,7 @@ export default function App() {
     investor: t.nav.investors,
     profits: t.nav.profits,
     reports: t.nav.reports,
+    portfolio: t.pdoc.open,
     settings: t.nav.settings,
   }
 
@@ -100,6 +103,7 @@ export default function App() {
         {route.name === 'investor' && <InvestorDetail id={route.id} go={setRoute} />}
         {route.name === 'profits' && <Profits go={setRoute} />}
         {route.name === 'reports' && <Reports initialInvestorId={route.investorId} />}
+        {route.name === 'portfolio' && <Portfolio />}
         {route.name === 'settings' && <SettingsPage />}
       </main>
 

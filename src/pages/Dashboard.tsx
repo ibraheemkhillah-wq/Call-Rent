@@ -7,6 +7,7 @@ import { Empty, Stat } from '../components/ui'
 import { AddInvestment } from '../components/AddInvestment'
 import {
   IconClock,
+  IconDoc,
   IconPercent,
   IconPlus,
   IconTrend,
@@ -89,6 +90,10 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
             </button>
             <button className="btn" onClick={() => go({ name: 'reports' })}>
               {u.dashIssueReport}
+            </button>
+            <button className="btn" onClick={() => go({ name: 'portfolio' })}>
+              <IconDoc className="btn-icon" />
+              {t.pdoc.open}
             </button>
           </div>
         </div>

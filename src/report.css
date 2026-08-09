@@ -732,44 +732,81 @@
  * سابقاً. يُبرَز الصفّ كاملاً بخلفية وإطار كهرمانيّين ليُقرأ من التقرير
  * بنظرة واحدة، فمن يستلم الملف يعرف المبلغ المستحق له بلا بحث.
  *
- * الحدّان الجانبيان منطقيّان لا يمينيّان ويساريّان، والخانتان الأولى
- * والأخيرة بترتيب الشيفرة لا بترتيب العرض — فيصحّ الإطار في العربية
- * والإنجليزية والتركية معاً.
+ * المُحدِّد يبدأ بـ table عمداً: تخطيط الصفوف الزوجية
+ * (.doc tbody tr:nth-child(even) td) أعلى تخصيصاً من .doc .due-row td،
+ * فكان يغلبه ويمحو الإبراز كلما وقع الصفّ في موضع زوجي — وهو ما يختلف
+ * بين تقرير المستثمر وتقرير المحفظة. الأربع عناصر هنا تحسم الأمر بلا
+ * اعتمادٍ على ترتيب الملف.
+ *
+ * والحدّان الجانبيان بالاتجاه الفعلي للمستند لا بالمنطقي: خانات الأرقام
+ * تحمل direction: ltr، فالحدود المنطقية تنقلب عليها وحدها.
  */
-.doc .due-row td {
+.doc table tbody tr.due-row td {
   background: #fdeecd;
   color: #7a4d05;
   border-block: 1.6px solid #d99524;
 }
 
-/*
- * الحدّان الجانبيان بالاتجاه الفعلي للمستند لا بالمنطقي.
- * خانات الأرقام تحمل direction: ltr لتُقرأ المبالغ لاتينياً، فلو استُعمل
- * border-inline-end لانقلب على تلك الخانة وحدها: يظهر خطٌّ داخل الصفّ
- * وتنكشف حافته الخارجية.
- */
-.doc[dir='rtl'] .due-row td:first-child {
+.doc[dir='rtl'] table tbody tr.due-row td:first-child {
   border-right: 1.6px solid #d99524;
 }
 
-.doc[dir='rtl'] .due-row td:last-child {
+.doc[dir='rtl'] table tbody tr.due-row td:last-child {
   border-left: 1.6px solid #d99524;
 }
 
-.doc[dir='ltr'] .due-row td:first-child {
+.doc[dir='ltr'] table tbody tr.due-row td:first-child {
   border-left: 1.6px solid #d99524;
 }
 
-.doc[dir='ltr'] .due-row td:last-child {
+.doc[dir='ltr'] table tbody tr.due-row td:last-child {
   border-right: 1.6px solid #d99524;
 }
 
 /* المستحقّ نفسه أثقل من بقية الصفّ: هو المقصود لا جاره */
-.doc .due-row .due-label,
-.doc .due-row .due-amount {
+.doc table tbody tr.due-row .due-label,
+.doc table tbody tr.due-row .due-amount {
   font-weight: 700;
 }
 
-.doc .due-row .due-amount {
+.doc table tbody tr.due-row .due-amount {
   font-size: 1.06em;
+}
+
+/*
+ * شريط حركة رأس المال في تقرير المحفظة.
+ * خمس خانات متساوية: ما دخل، وما خرج، وصافيهما، والنموّ، والداخلون
+ * الجدد. تُقرأ صفاً واحداً فيُعرف من أين جاء تغيّر رأس المال.
+ */
+.doc .doc-flow {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.doc .flow-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 9px;
+  border: 1px solid var(--d-line);
+  border-radius: 6px;
+  background: var(--d-cream);
+}
+
+.doc .flow-cell span {
+  font-size: 7.6pt;
+  color: var(--d-muted);
+}
+
+.doc .flow-cell b {
+  font-size: 9.6pt;
+  color: var(--d-navy);
+}
+
+.doc .doc-flow-note {
+  margin-top: 5px;
+  font-size: 7.8pt;
+  color: var(--d-muted);
+  text-align: end;
 }
