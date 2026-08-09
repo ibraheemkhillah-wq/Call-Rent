@@ -37,10 +37,13 @@ export function PortfolioDoc({
   report,
   settings,
   series,
+  anonymous = false,
 }: {
   report: PortfolioReport
   settings: Settings
   series: SeriesPoint[]
+  /** يُخفي أسماء المستثمرين ويُبقي كل رقم كما هو */
+  anonymous?: boolean
 }) {
   const { t, dir, lang } = useLang()
   const d = t.pdoc
@@ -229,7 +232,10 @@ export function PortfolioDoc({
         <section className="doc-section">
           <h2 className="doc-section-title">
             {d.investorsTitle}
-            <small>{d.investorsNote(report.rows.length)}</small>
+            <small>
+              {d.investorsNote(report.rows.length)}
+              {anonymous && <span className="anon-badge">{d.anonBadge}</span>}
+            </small>
           </h2>
           <table className="pf-investors">
             <thead>
@@ -246,9 +252,9 @@ export function PortfolioDoc({
               </tr>
             </thead>
             <tbody>
-              {report.rows.map((r) => (
+              {report.rows.map((r, i) => (
                 <tr key={r.investor.id} className={r.capital > 0 ? '' : 'is-empty'}>
-                  <td>{r.investor.name}</td>
+                  <td>{anonymous ? d.anonName(i + 1) : r.investor.name}</td>
                   <td>{dateLabel(r.firstDeposit)}</td>
                   <td className="num">{money(r.totalDeposited, '')}</td>
                   <td className="num">{money(r.capital, '')}</td>

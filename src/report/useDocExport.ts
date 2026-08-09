@@ -50,6 +50,17 @@ export function useDocExport({
   const canvasesRef = useRef<HTMLCanvasElement[]>([])
   const fileRef = useRef<File | null>(null)
 
+  /*
+   * رقم جيل المحتوى.
+   *
+   * الالتقاط يستغرق ثواني، وقد يتغيّر المستند أثناءه — كأن يُطلب إخفاء
+   * أسماء المستثمرين. فلو خُزِّنت نتيجة التقاطٍ بدأ قبل التغيير لعادت
+   * المعاينة والملف بالمحتوى القديم رغم أن الشاشة تعرض الجديد، فتُرسل
+   * الأسماء وقد طُلب حجبها. لذا يُوسَم كل التقاط بجيله، ويُطرح ما لا
+   * يوافق الجيل الحالي ويُعاد.
+   */
+  const genRef = useRef(0)
+
   const [pages, setPages] = useState<string[]>([])
   const [fullscreen, setFullscreen] = useState(false)
   const [busy, setBusy] = useState<'' | 'preview' | 'share'>('')
@@ -58,6 +69,7 @@ export function useDocExport({
 
   /** أي تغيير في الاختيار أو البيانات يُبطل ما حُضِّر سابقاً */
   useEffect(() => {
+    genRef.current += 1
     canvasesRef.current = []
     fileRef.current = null
     setPages([])
@@ -70,13 +82,23 @@ export function useDocExport({
 
   /** يُرجع الالتقاط المحفوظ، أو ينفّذه عند أول حاجة إليه */
   const ensureCanvases = useCallback(async (): Promise<HTMLCanvasElement[]> => {
-    if (canvasesRef.current.length > 0) return canvasesRef.current
-    const nodes = Array.from(sourceRef.current?.querySelectorAll<HTMLElement>('.doc') ?? [])
-    if (nodes.length === 0) return []
-    const canvases = await renderDocCanvases(nodes)
-    canvasesRef.current = canvases
-    setPages(canvasesToImages(canvases))
-    return canvases
+    // ثلاث محاولات تكفي: التغيير أثناء الالتقاط حدثٌ نادر لا متكرّر
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (canvasesRef.current.length > 0) return canvasesRef.current
+
+      const gen = genRef.current
+      const nodes = Array.from(sourceRef.current?.querySelectorAll<HTMLElement>('.doc') ?? [])
+      if (nodes.length === 0) return []
+
+      const canvases = await renderDocCanvases(nodes)
+      if (gen === genRef.current) {
+        canvasesRef.current = canvases
+        setPages(canvasesToImages(canvases))
+        return canvases
+      }
+      // تغيّر المستند أثناء الالتقاط — تُطرح النتيجة ويُعاد على الجديد
+    }
+    return canvasesRef.current
   }, [])
 
   /**
@@ -88,10 +110,14 @@ export function useDocExport({
    */
   const ensureFile = useCallback(async (): Promise<File | null> => {
     if (fileRef.current) return fileRef.current
+
+    const gen = genRef.current
     const canvases = await ensureCanvases()
     if (canvases.length === 0) return null
+
     const file = await pdfFileFromCanvases(canvases, fileName)
-    fileRef.current = file
+    // لا يُخزَّن ملفٌ بُني على محتوى تجاوزه المستند
+    if (gen === genRef.current) fileRef.current = file
     return file
   }, [ensureCanvases, fileName])
 

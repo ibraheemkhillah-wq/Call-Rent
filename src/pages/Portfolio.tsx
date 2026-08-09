@@ -37,6 +37,8 @@ export function Portfolio() {
   const [type, setType] = useState<PeriodType>('monthly')
   const [year, setYear] = useState(THIS_YEAR)
   const [index, setIndex] = useState(THIS_MONTH)
+  /** إخفاء الأسماء عند عرض التقرير على غير المعنيين */
+  const [anonymous, setAnonymous] = useState(false)
 
   /** إعادة ضبط رقم الفترة عند تغيير نوعها حتى لا يخرج عن المدى */
   useEffect(() => {
@@ -65,7 +67,7 @@ export function Portfolio() {
 
   const ex = useDocExport({
     fileName,
-    deps: [report, series, db.settings],
+    deps: [report, series, db.settings, anonymous],
     ready: db.investors.length > 0,
   })
 
@@ -146,6 +148,18 @@ export function Portfolio() {
           {actions}
         </div>
 
+        <label className="checkline" style={{ marginTop: 14 }}>
+          <input
+            type="checkbox"
+            checked={anonymous}
+            onChange={(e) => setAnonymous(e.target.checked)}
+          />
+          {d.anonToggle}
+          <span className="hint" style={{ marginInlineStart: 8 }}>
+            {d.anonHint}
+          </span>
+        </label>
+
         <div className="divider" />
         <p className="muted" style={{ margin: 0, fontSize: 13 }}>
           {d.subtitle}
@@ -172,7 +186,12 @@ export function Portfolio() {
 
       {/* المستند معروض على الشاشة، ومنه يُلتقط الملف وصورة المعاينة معاً */}
       <div className="report-shell print-area" ref={ex.sourceRef}>
-        <PortfolioDoc report={report} series={series} settings={db.settings} />
+        <PortfolioDoc
+          report={report}
+          series={series}
+          settings={db.settings}
+          anonymous={anonymous}
+        />
       </div>
 
       {ex.fullscreen && ex.pages.length > 0 && (

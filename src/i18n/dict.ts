@@ -674,6 +674,10 @@ export const ar = {
     lifetimeReturn: 'العائد التراكمي',
     totalValue: 'قيمة المحفظة (رأس المال + المستحق)',
 
+    anonToggle: 'إخفاء أسماء المستثمرين',
+    anonHint: 'للعرض على غير المعنيين — تبقى كل الأرقام كما هي',
+    anonName: (n: number) => `مستثمر ${n}`,
+    anonBadge: 'الأسماء مخفية',
     internal: 'مستند داخلي — للإدارة',
     noData: 'لا بيانات في هذه الفترة',
   },
@@ -1338,6 +1342,10 @@ export const en: Dict = {
     lifetimeReturn: 'Cumulative return',
     totalValue: 'Portfolio value (capital + accrued)',
 
+    anonToggle: 'Hide investor names',
+    anonHint: 'For showing to outsiders — every figure stays as it is',
+    anonName: (n) => `Investor ${n}`,
+    anonBadge: 'Names withheld',
     internal: 'Internal document — management',
     noData: 'No data in this period',
   },
@@ -2000,6 +2008,10 @@ export const tr: Dict = {
     lifetimeReturn: 'Kümülatif getiri',
     totalValue: 'Portföy değeri (sermaye + tahakkuk)',
 
+    anonToggle: 'Yatırımcı adlarını gizle',
+    anonHint: 'Dışarıya göstermek için — tüm rakamlar aynı kalır',
+    anonName: (n) => `Yatırımcı ${n}`,
+    anonBadge: 'Adlar gizlendi',
     internal: 'İç belge — yönetim',
     noData: 'Bu dönemde veri yok',
   },

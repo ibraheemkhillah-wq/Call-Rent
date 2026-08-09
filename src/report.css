@@ -810,3 +810,19 @@
   color: var(--d-muted);
   text-align: end;
 }
+
+/*
+ * إشارة حجب الأسماء.
+ * تُذكر في المستند نفسه لا في الشاشة وحدها: من يقرأ التقرير يعرف أن
+ * الأسماء حُجبت قصداً، فلا يظنّها بياناتٍ ناقصة أو خللاً في التقرير.
+ */
+.doc .anon-badge {
+  display: inline-block;
+  margin-inline-start: 8px;
+  padding: 0 7px;
+  border: 1px solid var(--d-line);
+  border-radius: 999px;
+  background: var(--d-cream);
+  color: var(--d-muted);
+  font-size: 7.4pt;
+}
