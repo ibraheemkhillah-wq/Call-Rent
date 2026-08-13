@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -20,8 +21,21 @@ import type {
 import { brand } from './theme/brand'
 import { dict } from './i18n/current'
 import { money, todayIso } from './lib/format'
+import {
+  clearDraft,
+  daysSince,
+  isEmptyDb,
+  readDraft,
+  readLocal,
+  readMeta,
+  readMirror,
+  requestPersistent,
+  writeBoth,
+  writeDraft,
+  writeMeta,
+  type WriteResult,
+} from './lib/persist'
 
-const STORAGE_KEY = 'call-rent-investors-db-v1'
 const DB_VERSION = 1
 
 export const defaultSettings: Settings = {
@@ -92,21 +106,42 @@ function migrateSettings(stored: Partial<Settings>): Settings {
   return merged
 }
 
-function loadDb(): Database {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return emptyDb
-    const parsed = JSON.parse(raw) as Partial<Database>
-    return {
-      version: DB_VERSION,
-      investors: parsed.investors ?? [],
-      contributions: parsed.contributions ?? [],
-      profits: parsed.profits ?? [],
-      settings: migrateSettings(parsed.settings ?? {}),
-    }
-  } catch {
-    return emptyDb
+/** توحيد شكل ما يُقرأ من ملف أو مخزن مهما كانت نسخته */
+function normalizeDb(parsed: Partial<Database>): Database {
+  return {
+    version: DB_VERSION,
+    investors: parsed.investors ?? [],
+    contributions: parsed.contributions ?? [],
+    profits: parsed.profits ?? [],
+    settings: migrateSettings(parsed.settings ?? {}),
   }
+}
+
+/** حال حفظ البيانات على الجهاز — تُعرض للمستخدم لا تُخبَّأ عنه */
+export interface StorageState {
+  /** نجحت آخر كتابة في مخزنٍ واحد على الأقل */
+  ok: boolean
+  /** التخزين السريع المتزامن */
+  local: boolean
+  /** المخزن الثاني الأكبر حصّةً */
+  mirror: boolean
+  /** وقت آخر كتابة ناجحة — ISO */
+  savedAt: string
+  /** منح المتصفح تخزيناً لا يُخلى تلقائياً */
+  persistent: boolean
+  /** استُعيدت البيانات تلقائياً من المخزن الثاني عند هذا الإقلاع */
+  restored: boolean
+  /** آخر ملف نسخة احتياطية صُدِّر — ISO */
+  lastBackupAt: string
+  /** عدد الأيام منذ آخر نسخة احتياطية */
+  backupAgeDays: number
+}
+
+/** سطر في حفظ أرباح شهر — المبلغ، ومعه النسبة إن أُدخل نسبةً */
+export interface ProfitInput {
+  investorId: string
+  amount: number
+  entryPct?: number
 }
 
 /** وصف تعديل معلّق — المفتاح يدمج التعديلات المتتابعة على الشيء نفسه */
@@ -117,6 +152,8 @@ export interface PendingItem {
 
 interface StoreValue {
   db: Database
+  /** حال الحفظ على الجهاز — للتنبيه حين لا يكون الحفظ مضموناً */
+  storage: StorageState
   /** التعديلات المعلّقة بترتيب حدوثها */
   pendingLog: PendingItem[]
   /** عدد التعديلات المعلّقة التي لم تُحفظ بعد */
@@ -138,7 +175,7 @@ interface StoreValue {
   deleteProfit: (id: string) => void
   setProfitPaid: (id: string, paid: boolean) => void
   /* دفعة واحدة: تسجيل أرباح شهر لعدة مستثمرين */
-  bulkUpsertProfits: (month: MonthKey, rows: { investorId: string; amount: number }[]) => void
+  bulkUpsertProfits: (month: MonthKey, rows: ProfitInput[]) => void
   /* الإعدادات والنسخ الاحتياطي */
   updateSettings: (patch: Partial<Settings>) => void
   exportJson: () => void
@@ -159,20 +196,136 @@ export function StoreProvider({ children }: { children: ReactNode }) {
    * فلا تُثبَّت لمسة خاطئة حتى يضغط المستخدم «حفظ التعديلات».
    * أما ما يمرّ بنموذج وزرِّ حفظ فيُثبَّت فوراً: قد قُصد أصلاً.
    */
-  const [committed, setCommitted] = useState<Database>(() => loadDb())
-  const [staged, setStaged] = useState<Database | null>(null)
-  const [pendingLog, setPendingLog] = useState<PendingItem[]>([])
+  /* ما وُجد في التخزين السريع عند الإقلاع — يُقرأ مرة واحدة */
+  const [bootSnap] = useState(() => readLocal())
+  const [committed, setCommitted] = useState<Database>(() =>
+    bootSnap ? normalizeDb(bootSnap.data) : emptyDb,
+  )
+
+  /* المسوّدة المستعادة: تعديلات جلسةٍ سابقة لم تُحفظ ولم يُتراجع عنها */
+  const [restoredDraft] = useState(() => readDraft<PendingItem>())
+  const [staged, setStaged] = useState<Database | null>(
+    restoredDraft ? normalizeDb(restoredDraft.staged) : null,
+  )
+  const [pendingLog, setPendingLog] = useState<PendingItem[]>(restoredDraft?.pendingLog ?? [])
 
   const db = staged ?? committed
   const pendingCount = pendingLog.length
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(committed))
-    } catch (err) {
-      console.error('تعذّر حفظ البيانات محلياً', err)
+  const [storage, setStorage] = useState<StorageState>(() => {
+    const meta = readMeta()
+    return {
+      ok: true,
+      local: true,
+      mirror: true,
+      savedAt: bootSnap?.savedAt ?? '',
+      persistent: false,
+      restored: false,
+      lastBackupAt: meta.lastBackupAt,
+      backupAgeDays: daysSince(meta.lastBackupAt),
     }
-  }, [committed])
+  })
+
+  /*
+   * لا يُكتب شيء قبل سؤال المخزن الثاني.
+   *
+   * لو مُحي التخزين السريع وبقي الثاني عامراً، فالكتابة الأولى — وهي
+   * قاعدة فارغة — تمحو النسخة الناجية قبل أن تُقرأ. فيُنتظر الفحص.
+   */
+  const [checked, setChecked] = useState(false)
+  const committedRef = useRef(committed)
+  committedRef.current = committed
+  /** ما قُرئ عند الإقلاع — لا يُعاد كتابته على نفسه بلا سبب */
+  const bootRef = useRef(committed)
+
+  /** يرفع نتيجة كتابةٍ إلى الواجهة */
+  const report = useCallback(({ local, mirror, savedAt }: WriteResult) => {
+    setStorage((s) => ({
+      ...s,
+      local,
+      mirror,
+      ok: local || mirror,
+      savedAt: local || mirror ? savedAt : s.savedAt,
+    }))
+  }, [])
+
+  useEffect(() => {
+    let alive = true
+
+    void (async () => {
+      void requestPersistent().then((persistent) => {
+        if (alive) setStorage((s) => ({ ...s, persistent }))
+      })
+
+      const mirror = await readMirror()
+      if (!alive) return
+      const current = committedRef.current
+
+      /*
+       * متى تُستعاد النسخة الثانية تلقائياً:
+       *  • أن يكون التخزين السريع فارغاً — مُحي وبقي الثاني.
+       *  • أو أن تكون النسخة الثانية أحدث — وهذا معناه أن كتابةً في
+       *    السريع أخفقت يوماً (حصّته ممتلئة) فتجمّد على نسخة قديمة،
+       *    وهو أخطر الحالين: بيانات ناقصة تبدو سليمة.
+       */
+      const staleLocal = Boolean(mirror && mirror.savedAt > (bootSnap?.savedAt ?? ''))
+
+      if (mirror && !isEmptyDb(mirror.data) && (isEmptyDb(current) || staleLocal)) {
+        setCommitted(normalizeDb(mirror.data))
+        bootRef.current = current
+        setStorage((s) => ({ ...s, restored: true, savedAt: mirror.savedAt }))
+      } else if (
+        !isEmptyDb(current) &&
+        JSON.stringify(mirror?.data ?? null) !== JSON.stringify(current)
+      ) {
+        /*
+         * المخزن الثاني متأخّر — كأن تُنقل البيانات من نسخة أقدم لا تعرفه.
+         * يُلحَق بالمحفوظ الآن لا عند أول تعديل، فالعطب قد يقع قبله.
+         */
+        const result = await writeBoth(current)
+        if (alive) report(result)
+      }
+
+      setChecked(true)
+    })()
+
+    return () => {
+      alive = false
+    }
+  }, [report, bootSnap])
+
+  /**
+   * المحفوظ يُكتب في المخزنين عند كل تغيير.
+   *
+   * ولا يُكتب ما قُرئ عند الإقلاع على نفسه: كتابةٌ بلا تغيير لا تُفيد،
+   * وقد تسبق ما يكتبه غيرها فتمحوه.
+   */
+  useEffect(() => {
+    if (!checked || committed === bootRef.current) return
+    let alive = true
+
+    void writeBoth(committed).then((result) => {
+      if (alive) report(result)
+    })
+
+    return () => {
+      alive = false
+    }
+  }, [committed, checked, report])
+
+  /**
+   * المعلّق يُحفظ بوصفه معلّقاً، فلا يضيع عمل جلسةٍ بإغلاقٍ مفاجئ.
+   * وتأخيرٌ قصير يمنع كتابة القاعدة كلها مع كل حرفٍ يُطبع في حقل.
+   */
+  useEffect(() => {
+    if (!checked) return
+    if (!staged || pendingLog.length === 0) {
+      clearDraft()
+      return
+    }
+    const timer = window.setTimeout(() => writeDraft({ staged, pendingLog }), 400)
+    return () => window.clearTimeout(timer)
+  }, [staged, pendingLog, checked])
 
   /** تحذير قبل مغادرة الصفحة وفيها تعديل معلّق */
   useEffect(() => {
@@ -383,22 +536,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   )
 
   const bulkUpsertProfits = useCallback(
-    (month: MonthKey, rows: { investorId: string; amount: number }[]) => {
+    (month: MonthKey, rows: ProfitInput[]) => {
       stage((d) => {
-        let profits = [...d.profits]
+        const profits = [...d.profits]
         for (const row of rows) {
           const idx = profits.findIndex(
             (p) => p.investorId === row.investorId && p.month === month,
           )
           if (row.amount === 0 && idx === -1) continue
           if (idx >= 0) {
-            profits[idx] = { ...profits[idx], amount: row.amount }
+            profits[idx] = { ...profits[idx], amount: row.amount, entryPct: row.entryPct }
           } else {
             profits.push({
               id: newId(),
               investorId: row.investorId,
               month,
               amount: row.amount,
+              entryPct: row.entryPct,
               paid: false,
               paidDate: '',
               note: '',
@@ -436,6 +590,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     a.download = `نسخة-احتياطية-المستثمرين-${todayIso()}.json`
     a.click()
     URL.revokeObjectURL(url)
+
+    // ملفٌ خارج المتصفح هو النسخة التي لا يطالها مسحُ بيانات الموقع
+    const meta = writeMeta({ lastBackupAt: new Date().toISOString() })
+    setStorage((s) => ({
+      ...s,
+      lastBackupAt: meta.lastBackupAt,
+      backupAgeDays: daysSince(meta.lastBackupAt),
+    }))
   }, [db])
 
   const importJson = useCallback(async (file: File) => {
@@ -462,6 +624,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const value = useMemo<StoreValue>(
     () => ({
       db,
+      storage,
       pendingLog,
       pendingCount,
       saveChanges,
@@ -483,6 +646,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }),
     [
       db,
+      storage,
       pendingLog,
       pendingCount,
       saveChanges,

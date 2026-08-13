@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useStore } from './store'
 import { LogoMark, ThemeToggle, Wordmark } from './components/ui'
 import { PendingBar } from './components/PendingBar'
+import { StorageGuard } from './components/StorageGuard'
 import {
   IconChart,
   IconDashboard,
@@ -98,6 +99,7 @@ export default function App() {
       </aside>
 
       <main className="main">
+        <StorageGuard />
         {route.name === 'dashboard' && <Dashboard go={setRoute} />}
         {route.name === 'investors' && <Investors go={setRoute} />}
         {route.name === 'investor' && <InvestorDetail id={route.id} go={setRoute} />}

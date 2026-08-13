@@ -175,3 +175,20 @@ export const IconEye = ({ className, size = 18 }: P) => (
     <circle cx="12" cy="12" r="3.1" />
   </svg>
 )
+
+/** درع — لحال حفظ البيانات */
+export const IconShield = ({ className, size = 18 }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M12 3l7 3v5c0 4.2-2.8 7.6-7 10-4.2-2.4-7-5.8-7-10V6l7-3z" />
+    <path d="M9 12l2 2 4-4" />
+  </svg>
+)
+
+/** تنبيه */
+export const IconAlert = ({ className, size = 18 }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M12 4l8.5 15h-17L12 4z" />
+    <path d="M12 10v4" />
+    <path d="M12 17.2v.2" />
+  </svg>
+)

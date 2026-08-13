@@ -13,12 +13,35 @@ import {
 } from '../components/Icons'
 import { themeLabels, useTheme, type ThemeMode } from '../theme/theme'
 import { BUILD_ID, checkForUpdate, hardReset } from '../lib/pwa'
+import { isStandalone } from '../lib/persist'
+import { dateLabel } from '../lib/format'
 import defaultSignature from '../assets/signature.png'
 
+/**
+ * «2026-08-13T09:41:22Z» → «13 أغسطس 2026 — 09:41»
+ *
+ * الجزآن معزولان بـ bdi: التاريخ والوقت رقمان يكتنفهما نصّ عربي، ولو
+ * تُركا في تيّار واحد لالتصق يومُ التاريخ بالساعة وقُرئ الترتيب مقلوباً.
+ */
+function Stamp({ iso, fallback }: { iso: string; fallback: string }) {
+  const d = new Date(iso)
+  if (!iso || !Number.isFinite(d.getTime())) return <>{fallback}</>
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return (
+    <>
+      <bdi>{dateLabel(iso.slice(0, 10))}</bdi>
+      {' — '}
+      <bdi>{`${pad(d.getHours())}:${pad(d.getMinutes())}`}</bdi>
+    </>
+  )
+}
+
 export function SettingsPage() {
-  const { db, updateSettings, exportJson, importJson, resetAll } = useStore()
+  const { db, storage, updateSettings, exportJson, importJson, resetAll } = useStore()
   const t = useT()
   const u = t.ui
+  const g = t.storage
+  const installed = isStandalone()
   const { lang, setLang } = useLang()
   const { mode, theme, setMode } = useTheme()
   const s = db.settings
@@ -363,6 +386,61 @@ export function SettingsPage() {
             <div className="stat-value">{db.profits.length}</div>
           </div>
         </div>
+      </div>
+
+      {/* أين تُحفظ الأرقام فعلاً — يُقال صراحةً لا يُفترض */}
+      <div className="card" style={{ marginTop: 22 }}>
+        <div className="card-title">{g.cardTitle}</div>
+        <div className="card-sub">{g.cardSub}</div>
+
+        <div className="grid grid-2">
+          <div>
+            <div className="stat-label">{g.savedAt}</div>
+            <div className="stat-value" style={{ fontSize: 17 }}>
+              <Stamp iso={storage.savedAt} fallback={g.never} />
+            </div>
+          </div>
+          <div>
+            <div className="stat-label">{g.lastBackup}</div>
+            <div
+              className={storage.backupAgeDays > 14 ? 'stat-value warn' : 'stat-value'}
+              style={{ fontSize: 17 }}
+            >
+              <Stamp iso={storage.lastBackupAt} fallback={g.never} />
+            </div>
+          </div>
+        </div>
+
+        <div className="divider" />
+
+        <ul className="storage-list">
+          <li>
+            <span>{g.storeFast}</span>
+            <b className={storage.local ? 'pos' : 'neg'}>
+              {storage.local ? g.working : g.failed}
+            </b>
+          </li>
+          <li>
+            <span>{g.storeMirror}</span>
+            <b className={storage.mirror ? 'pos' : 'neg'}>
+              {storage.mirror ? g.working : g.failed}
+            </b>
+          </li>
+          <li>
+            <span>{g.storePersistent}</span>
+            <b className={storage.persistent ? 'pos' : 'muted'}>
+              {storage.persistent ? g.granted : g.notGranted}
+            </b>
+          </li>
+          <li>
+            <span>{g.installed}</span>
+            <b className={installed ? 'pos' : 'muted'}>{installed ? g.yes : g.no}</b>
+          </li>
+        </ul>
+
+        <p className="hint" style={{ marginTop: 12 }}>
+          {storage.persistent ? g.persistentHint : `${g.persistentHint} ${g.installSteps}`}
+        </p>
       </div>
     </>
   )

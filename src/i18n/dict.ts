@@ -682,6 +682,46 @@ export const ar = {
     noData: 'لا بيانات في هذه الفترة',
   },
 
+  /* ── حفظ البيانات على الجهاز ── */
+  storage: {
+    failTitle: 'تعذّر حفظ البيانات على هذا الجهاز',
+    failText:
+      'مساحة التخزين ممتلئة أو محظورة في هذا المتصفح. صدّر نسخة احتياطية الآن قبل إغلاق التطبيق.',
+    restoredTitle: 'استُعيدت بياناتك تلقائياً',
+    restoredText:
+      'المتصفح محا التخزين السريع، فأُعيدت البيانات من النسخة الداخلية الثانية. تأكّد من الأرقام، وخُذ نسخة احتياطية.',
+    backupTitle: (days: number) =>
+      Number.isFinite(days)
+        ? `مرّ ${Math.floor(days)} يوماً على آخر نسخة احتياطية`
+        : 'لم تأخذ نسخة احتياطية بعد',
+    backupText:
+      'ملف النسخة الاحتياطية هو الوحيد الذي لا يمحوه المتصفح. احفظه في الملفات أو أرسله لنفسك.',
+    backupNow: 'نسخة احتياطية الآن',
+    installTitle: 'أضف التطبيق إلى الشاشة الرئيسية',
+    installText:
+      'iOS يمحو بيانات المواقع التي لم تُفتح سبعة أيام، ويستثني ما أُضيف إلى الشاشة الرئيسية. الإضافة هي ما يحفظ بياناتك على الجوال.',
+    installSteps: 'من شريط سفاري: زر المشاركة ← «إضافة إلى الشاشة الرئيسية» ← إضافة.',
+    dismiss: 'إخفاء',
+
+    cardTitle: 'أمان البيانات',
+    cardSub: 'أين تُحفظ أرقامك، ومتى حُفظت آخر مرة',
+    savedAt: 'آخر حفظ',
+    never: 'لم يحدث بعد',
+    lastBackup: 'آخر نسخة احتياطية',
+    storeFast: 'التخزين السريع',
+    storeMirror: 'المخزن الاحتياطي الداخلي',
+    storePersistent: 'تخزين دائم لا يُخلى',
+    installed: 'مثبَّت على الشاشة الرئيسية',
+    working: 'يعمل',
+    failed: 'لا يعمل',
+    granted: 'ممنوح',
+    notGranted: 'غير ممنوح',
+    yes: 'نعم',
+    no: 'لا',
+    persistentHint:
+      'التخزين الدائم يمنع المتصفح من محو البيانات عند ضيق المساحة. لا يمنحه سفاري، ويعوّضه التثبيت على الشاشة الرئيسية.',
+  },
+
   theme: {
     toLight: 'الرؤية النهارية',
     toDark: 'الرؤية الليلية',
@@ -1350,6 +1390,45 @@ export const en: Dict = {
     noData: 'No data in this period',
   },
 
+  storage: {
+    failTitle: 'Could not save your data on this device',
+    failText:
+      'Storage is full or blocked in this browser. Export a backup now, before you close the app.',
+    restoredTitle: 'Your data was restored automatically',
+    restoredText:
+      'The browser wiped the fast store, so the data came back from the second internal copy. Check the figures, and take a backup.',
+    backupTitle: (days) =>
+      Number.isFinite(days)
+        ? `${Math.floor(days)} days since your last backup`
+        : 'You have not taken a backup yet',
+    backupText:
+      'The backup file is the only copy the browser cannot erase. Keep it in Files, or send it to yourself.',
+    backupNow: 'Back up now',
+    installTitle: 'Add the app to your Home Screen',
+    installText:
+      'iOS erases the storage of sites left unopened for seven days, and exempts apps added to the Home Screen. Adding it is what keeps your data safe on a phone.',
+    installSteps: 'In Safari: Share button → “Add to Home Screen” → Add.',
+    dismiss: 'Hide',
+
+    cardTitle: 'Data safety',
+    cardSub: 'Where your figures are kept, and when they were last saved',
+    savedAt: 'Last saved',
+    never: 'Not yet',
+    lastBackup: 'Last backup',
+    storeFast: 'Fast store',
+    storeMirror: 'Internal backup store',
+    storePersistent: 'Persistent storage',
+    installed: 'Installed on Home Screen',
+    working: 'Working',
+    failed: 'Not working',
+    granted: 'Granted',
+    notGranted: 'Not granted',
+    yes: 'Yes',
+    no: 'No',
+    persistentHint:
+      'Persistent storage stops the browser from clearing data when space runs low. Safari does not grant it; installing to the Home Screen takes its place.',
+  },
+
   theme: {
     toLight: 'light mode',
     toDark: 'dark mode',
@@ -2014,6 +2093,45 @@ export const tr: Dict = {
     anonBadge: 'Adlar gizlendi',
     internal: 'İç belge — yönetim',
     noData: 'Bu dönemde veri yok',
+  },
+
+  storage: {
+    failTitle: 'Veriler bu cihaza kaydedilemedi',
+    failText:
+      'Bu tarayıcıda depolama dolu ya da engelli. Uygulamayı kapatmadan önce hemen yedek al.',
+    restoredTitle: 'Verilerin otomatik olarak geri getirildi',
+    restoredText:
+      'Tarayıcı hızlı depoyu sildi, veriler ikinci dahili kopyadan geri geldi. Rakamları kontrol et ve bir yedek al.',
+    backupTitle: (days) =>
+      Number.isFinite(days)
+        ? `Son yedekten bu yana ${Math.floor(days)} gün geçti`
+        : 'Henüz yedek almadın',
+    backupText:
+      'Yedek dosyası, tarayıcının silemeyeceği tek kopyadır. Dosyalar’da sakla ya da kendine gönder.',
+    backupNow: 'Şimdi yedekle',
+    installTitle: 'Uygulamayı Ana Ekrana ekle',
+    installText:
+      'iOS, yedi gün açılmayan sitelerin verilerini siler; Ana Ekrana eklenen uygulamalar bunun dışındadır. Telefonda verini koruyan şey bu eklemedir.',
+    installSteps: 'Safari’de: Paylaş düğmesi → “Ana Ekrana Ekle” → Ekle.',
+    dismiss: 'Gizle',
+
+    cardTitle: 'Veri güvenliği',
+    cardSub: 'Rakamların nerede saklanıyor ve en son ne zaman kaydedildi',
+    savedAt: 'Son kayıt',
+    never: 'Henüz yok',
+    lastBackup: 'Son yedek',
+    storeFast: 'Hızlı depo',
+    storeMirror: 'Dahili yedek depo',
+    storePersistent: 'Kalıcı depolama',
+    installed: 'Ana Ekrana kurulu',
+    working: 'Çalışıyor',
+    failed: 'Çalışmıyor',
+    granted: 'Verildi',
+    notGranted: 'Verilmedi',
+    yes: 'Evet',
+    no: 'Hayır',
+    persistentHint:
+      'Kalıcı depolama, yer azaldığında tarayıcının verileri temizlemesini önler. Safari bunu vermez; yerini Ana Ekrana kurulum alır.',
   },
 
   theme: {

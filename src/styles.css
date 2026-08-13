@@ -1630,3 +1630,119 @@ tfoot td {
     font-weight: 600;
   }
 }
+
+/* ═══════════ تنبيه حفظ البيانات ═══════════ */
+
+/*
+ * شريط أعلى الصفحة يقول ما لا يستطيع التطبيق ضمانه وحده. نبرته من
+ * حالته: أحمر لفشل الكتابة، وكهرماني لتذكيرٍ يحتمل التأجيل، وأخضر
+ * لخبرٍ طيّب — استعادة تمّت من تلقائها.
+ */
+.guard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 12px 15px;
+  border: 1px solid var(--line-strong);
+  border-inline-start-width: 3px;
+  border-radius: var(--radius);
+  background: linear-gradient(160deg, var(--surface-solid-1), var(--surface-solid-2));
+  box-shadow: var(--shadow);
+}
+
+.guard-icon {
+  display: flex;
+  flex: none;
+}
+
+.guard-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+  line-height: 1.45;
+}
+
+.guard-body strong {
+  font-size: 13.5px;
+  color: var(--heading);
+}
+
+.guard-body span {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.guard .btn {
+  flex: none;
+}
+
+.guard-close {
+  flex: none;
+}
+
+.guard-danger {
+  border-color: var(--danger);
+}
+
+.guard-danger .guard-icon {
+  color: var(--danger);
+}
+
+.guard-warn {
+  border-color: var(--warn);
+}
+
+.guard-warn .guard-icon {
+  color: var(--warn);
+}
+
+.guard-ok {
+  border-color: var(--success);
+}
+
+.guard-ok .guard-icon {
+  color: var(--success);
+}
+
+@media (max-width: 640px) {
+  .guard {
+    flex-wrap: wrap;
+  }
+
+  .guard-body {
+    flex-basis: 100%;
+    order: 2;
+  }
+
+  .guard .btn {
+    order: 3;
+  }
+}
+
+/* قائمة حال التخزين في الإعدادات */
+.storage-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.storage-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.storage-list li:last-child {
+  border-bottom: 0;
+}
+
+.storage-list span {
+  color: var(--text-dim);
+}

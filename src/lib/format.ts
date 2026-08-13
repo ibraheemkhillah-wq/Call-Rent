@@ -121,3 +121,27 @@ export function parseAmount(input: string): number {
   if (!Number.isFinite(n)) return NaN
   return neg ? -n : n
 }
+
+/**
+ * كتابة رقم محسوب في حقلٍ يقرؤه parseAmount لاحقاً.
+ *
+ * ‏String(273.275) تُعطي «273.275»، وقراءتها بقاعدة فاصل الآلاف تُعطي
+ * 273,275 — فيتضخّم الربح ألف ضعف لمجرّد أن المستخدم خرج من الشاشة وعاد.
+ * القاعدة صحيحة لِما يكتبه إنسان («20,000» عشرون ألفاً)، والخطأ في أن
+ * رقماً حسبه البرنامج يُعرض بصيغة تحتمل قراءتين.
+ *
+ * فتُقصى هنا الصيغة الملتبسة وحدها: ثلاث خانات عشرية تُكتب أربعاً،
+ * والقيمة نفسها لا تتغيّر. ما يخرج من هنا يعود من parseAmount كما دخل.
+ */
+export function amountInput(value: number): string {
+  if (!Number.isFinite(value)) return ''
+
+  const neg = value < 0
+  // ست خانات تكفي للمبالغ والنِّسب معاً، وتُسقط خطأ الفاصلة العائمة
+  let s = Math.abs(value).toFixed(6).replace(/0+$/, '').replace(/\.$/, '')
+
+  const dot = s.indexOf('.')
+  if (dot >= 0 && s.length - dot - 1 === 3) s += '0'
+
+  return neg ? `-${s}` : s
+}

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '../store'
 import { useT } from '../i18n'
 import { capitalAtMonthEnd } from '../lib/calc'
-import { currentMonthKey, money, monthLabel, parseAmount, percent } from '../lib/format'
+import { amountInput, currentMonthKey, money, monthLabel, parseAmount, percent } from '../lib/format'
 import { Empty, Field } from '../components/ui'
 import { IconCheck, IconChart, IconUsers } from '../components/Icons'
 import type { Route } from '../App'
@@ -41,13 +41,30 @@ export function Profits({ go }: { go: (r: Route) => void }) {
 
   const totalCapital = rows.reduce((s, r) => s + r.capital, 0)
 
-  /** تحميل القيم الموجودة عند تغيير الشهر — المحفوظ دائماً مبلغ */
+  /**
+   * تحميل المحفوظ عند فتح الشهر.
+   *
+   * المحفوظ مبلغ دائماً، ومعه صورة الإدخال إن كانت نسبةً. تُعاد النسبة
+   * كما كُتبت ما دامت لا تزال تُعطي المبلغ المحفوظ نفسه؛ وإلا عُرض
+   * المبلغ، فالمعروض لا يخالف المحفوظ في الحالين.
+   */
   useEffect(() => {
     const nextDraft: Record<string, string> = {}
     const nextUnits: Record<string, Unit> = {}
     for (const r of rows) {
-      nextDraft[r.investor.id] = r.existing ? String(r.existing.amount) : ''
-      nextUnits[r.investor.id] = 'amount'
+      const saved = r.existing
+      if (!saved) {
+        nextDraft[r.investor.id] = ''
+        nextUnits[r.investor.id] = 'amount'
+        continue
+      }
+      const pct = saved.entryPct
+      const asPct =
+        typeof pct === 'number' &&
+        Number.isFinite(pct) &&
+        Math.abs((r.capital * pct) / 100 - saved.amount) < 0.005
+      nextDraft[r.investor.id] = amountInput(asPct ? (pct as number) : saved.amount)
+      nextUnits[r.investor.id] = asPct ? 'pct' : 'amount'
     }
     setDraft(nextDraft)
     setUnits(nextUnits)
@@ -77,9 +94,7 @@ export function Profits({ go }: { go: (r: Route) => void }) {
     let next = draft[investorId] ?? ''
     if (Number.isFinite(raw) && raw !== 0 && capital > 0) {
       next =
-        to === 'pct'
-          ? String(Number(((raw / capital) * 100).toFixed(4)))
-          : ((capital * raw) / 100).toFixed(2)
+        to === 'pct' ? amountInput((raw / capital) * 100) : amountInput((capital * raw) / 100)
     }
 
     setUnits({ ...units, [investorId]: to })
@@ -97,16 +112,31 @@ export function Profits({ go }: { go: (r: Route) => void }) {
     if (poolMode === 'pct') {
       // نسبة واحدة للجميع — تبقى نسبةً في الحقول لتُقرأ وتُعدَّل كما هي
       for (const r of rows) {
-        nextDraft[r.investor.id] = r.capital > 0 ? String(value) : ''
+        nextDraft[r.investor.id] = r.capital > 0 ? amountInput(value) : ''
         nextUnits[r.investor.id] = 'pct'
       }
     } else {
       if (totalCapital <= 0) return
-      for (const r of rows) {
-        const share = (r.capital / totalCapital) * value
-        nextDraft[r.investor.id] = share > 0 ? share.toFixed(2) : ''
+
+      /*
+       * التوزيع بالقروش لا بالكسور: تُقرَّب كل حصة إلى قرشين ليُقرأ
+       * الرقم، ثم يُعطى الباقي لأصحاب أكبر كسرٍ مهدور. فيساوي مجموع
+       * الحصص المبلغَ الموزَّع بالضبط، ولا يظهر فرق قرشٍ في السطر الأخير.
+       */
+      const cents = Math.round(value * 100)
+      const exact = rows.map((r) => (r.capital / totalCapital) * cents)
+      const share = exact.map((x) => Math.floor(x))
+      const byFraction = exact
+        .map((x, i) => ({ i, frac: x - Math.floor(x) }))
+        .sort((a, b) => b.frac - a.frac)
+
+      let rest = cents - share.reduce((s, x) => s + x, 0)
+      for (let k = 0; k < byFraction.length && rest > 0; k++, rest--) share[byFraction[k].i] += 1
+
+      rows.forEach((r, i) => {
+        nextDraft[r.investor.id] = share[i] > 0 ? amountInput(share[i] / 100) : ''
         nextUnits[r.investor.id] = 'amount'
-      }
+      })
     }
 
     setDraft(nextDraft)
@@ -117,10 +147,16 @@ export function Profits({ go }: { go: (r: Route) => void }) {
   function save() {
     const payload = rows
       .filter((r) => (draft[r.investor.id] ?? '') !== '')
-      .map((r) => ({
-        investorId: r.investor.id,
-        amount: amountOf(r.investor.id, r.capital),
-      }))
+      .map((r) => {
+        const raw = parseAmount(draft[r.investor.id] ?? '')
+        const asPct = units[r.investor.id] === 'pct' && Number.isFinite(raw)
+        return {
+          investorId: r.investor.id,
+          amount: amountOf(r.investor.id, r.capital),
+          // تُحفظ صورة الإدخال مع المبلغ ليعود الحقل كما كُتب
+          entryPct: asPct ? raw : undefined,
+        }
+      })
     bulkUpsertProfits(month, payload)
     setSaved(true)
   }

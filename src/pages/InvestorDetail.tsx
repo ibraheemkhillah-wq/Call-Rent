@@ -124,6 +124,8 @@ export function InvestorDetail({ id, go }: { id: string; go: (r: Route) => void 
       investorId: id,
       month: profitForm.month,
       amount,
+      // أُدخل مبلغاً هنا، فتسقط صورة النسبة إن كانت محفوظة من قبل
+      entryPct: undefined,
       paid: profitForm.paid,
       paidDate: profitForm.paid ? todayIso() : '',
       note: profitForm.note,
