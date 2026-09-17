@@ -210,8 +210,12 @@ export function PortfolioDoc({
                 <tr key={m.month} className={m.hasEntry ? '' : 'is-empty'}>
                   <td>{monthLabel(m.month)}</td>
                   <td className="num">{money(m.capital, '')}</td>
-                  <td className="num">{m.hasEntry ? money(m.profit, '') : '—'}</td>
-                  <td className="num">{m.hasEntry ? percent(m.pct) : '—'}</td>
+                  <td className={m.profit < 0 ? 'num loss' : 'num'}>
+                    {m.hasEntry ? money(m.profit, '') : '—'}
+                  </td>
+                  <td className={m.profit < 0 ? 'num loss' : 'num'}>
+                    {m.hasEntry ? percent(m.pct) : '—'}
+                  </td>
                   <td className="num">{count(m.investors)}</td>
                 </tr>
               ))}

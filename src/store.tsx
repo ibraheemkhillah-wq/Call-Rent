@@ -137,10 +137,17 @@ export interface StorageState {
   backupAgeDays: number
 }
 
-/** سطر في حفظ أرباح شهر — المبلغ، ومعه النسبة إن أُدخل نسبةً */
+/**
+ * سطر في حفظ أرباح شهر.
+ *
+ * التمييز بين الفارغ والصفر مقصود: «لا قيد لهذا الشهر» غير «قيدٌ قيمته
+ * صفر». الأول لم يُسجَّل بعد، والثاني شهرٌ سُجِّل ولم يربح — وهما في
+ * التقرير سطران مختلفان. فـ null تعني الأول، والصفر يعني الثاني.
+ */
 export interface ProfitInput {
   investorId: string
-  amount: number
+  /** المبلغ، وقد يكون صفراً أو سالباً (خسارة). و null تعني «لا قيد» */
+  amount: number | null
   entryPct?: number
 }
 
@@ -543,9 +550,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const idx = profits.findIndex(
             (p) => p.investorId === row.investorId && p.month === month,
           )
-          if (row.amount === 0 && idx === -1) continue
+
+          // حقلٌ تُرك فارغاً: لا قيد لهذا الشهر — ويُرفع ما كان مسجّلاً
+          if (row.amount === null) {
+            if (idx >= 0) profits.splice(idx, 1)
+            continue
+          }
+
+          /*
+           * الصرف لا معنى له إلا لربح موجب: شهرٌ بلا ربح لا يُصرف،
+           * وخسارةٌ لا تُصرف. فتسقط علامة الصرف عمّا ليس ربحاً.
+           */
+          const payable = row.amount > 0
+
           if (idx >= 0) {
-            profits[idx] = { ...profits[idx], amount: row.amount, entryPct: row.entryPct }
+            profits[idx] = {
+              ...profits[idx],
+              amount: row.amount,
+              entryPct: row.entryPct,
+              paid: payable && profits[idx].paid,
+              paidDate: payable ? profits[idx].paidDate : '',
+            }
           } else {
             profits.push({
               id: newId(),
@@ -562,7 +587,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         return { ...d, profits }
       }, {
         key: `profits:bulk:${month}`,
-        label: dict().pending.log.bulkProfits(monthText(month), rows.filter((r) => r.amount !== 0).length),
+        label: dict().pending.log.bulkProfits(monthText(month), rows.filter((r) => r.amount !== null).length),
       })
     },
     [stage],

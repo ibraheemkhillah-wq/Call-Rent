@@ -18,11 +18,31 @@ const PAD_X = 34
 export function PerformanceChart({ points }: { points: SeriesPoint[] }) {
   if (points.length === 0) return null
 
-  const maxPct = Math.max(...points.map((p) => p.pct), 1)
-  const maxProfit = Math.max(...points.map((p) => p.profit), 1)
   const plotH = H - PAD_T - PAD_B
   const step = (W - PAD_X * 2) / points.length
   const barW = Math.min(step * 0.46, 30)
+
+  /*
+   * المدى يضمّ الصفر دائماً.
+   *
+   * الشهر قد يخسر، فتنزل قيمته تحت الصفر. ولو قِيس المدى من أصغر قيمة
+   * إلى أكبرها لتحرّك خط الأساس من رسمٍ إلى آخر، فتُقرأ خسارةٌ صعوداً.
+   * بضمّ الصفر يبقى خط الأساس واحداً: ما فوقه ربح وما تحته خسارة.
+   */
+  const pcts = points.map((p) => p.pct)
+  const pctLow = Math.min(0, ...pcts)
+  const rawSpan = Math.max(Math.max(0, ...pcts) - pctLow, 1)
+  /* متّسع أسفل أدنى نقطة سالبة، تُكتب فيه نسبتها فلا تركب أسماء الأشهر */
+  const pctMin = pctLow < 0 ? pctLow - rawSpan * 0.18 : pctLow
+  const pctSpan = Math.max(0, ...pcts) - pctMin || 1
+  const yPctOf = (v: number) => PAD_T + plotH - ((v - pctMin) / pctSpan) * plotH
+
+  const profits = points.map((p) => p.profit)
+  const profMin = Math.min(0, ...profits)
+  const profSpan = Math.max(Math.max(0, ...profits) - profMin, 1)
+  const barArea = plotH * 0.82
+  const yBarOf = (v: number) => PAD_T + plotH - ((v - profMin) / profSpan) * barArea
+  const zeroY = yBarOf(0)
 
   /*
    * المحور الأفقي يتبع اتجاه القراءة: أقدم شهر عند بداية السطر.
@@ -32,11 +52,8 @@ export function PerformanceChart({ points }: { points: SeriesPoint[] }) {
   const rtl = LANG_DIR[currentLang()] === 'rtl'
   const x = (i: number) =>
     rtl ? W - PAD_X - step * (i + 0.5) : PAD_X + step * (i + 0.5)
-  const yPct = (v: number) => PAD_T + plotH - (v / maxPct) * plotH
-  const yBar = (v: number) => PAD_T + plotH - (v / maxProfit) * plotH * 0.82
-
   const line = points
-    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${yPct(p.pct).toFixed(1)}`)
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${yPctOf(p.pct).toFixed(1)}`)
     .join(' ')
 
   return (
@@ -60,18 +77,31 @@ export function PerformanceChart({ points }: { points: SeriesPoint[] }) {
         />
       ))}
 
-      {/* أعمدة مبلغ الربح */}
+      {/* خط الصفر — يظهر حين يوجد شهر خاسر */}
+      {profMin < 0 && (
+        <line
+          x1={PAD_X}
+          x2={W - PAD_X}
+          y1={zeroY}
+          y2={zeroY}
+          stroke="#9aa5b8"
+          strokeWidth={1.4}
+        />
+      )}
+
+      {/* أعمدة مبلغ الربح — تنبت من خط الصفر صعوداً أو نزولاً */}
       {points.map((p, i) => {
-        const top = yBar(p.profit)
+        const end = yBarOf(p.profit)
+        const loss = p.profit < 0
         return (
           <rect
             key={`b-${p.month}`}
             x={x(i) - barW / 2}
-            y={top}
+            y={Math.min(end, zeroY)}
             width={barW}
-            height={Math.max(PAD_T + plotH - top, 0)}
+            height={Math.max(Math.abs(end - zeroY), 0)}
             rx={3}
-            fill={p.inPeriod ? '#182b56' : '#c3cede'}
+            fill={loss ? (p.inPeriod ? '#a23b33' : '#e0b4b0') : p.inPeriod ? '#182b56' : '#c3cede'}
           />
         )
       })}
@@ -79,21 +109,32 @@ export function PerformanceChart({ points }: { points: SeriesPoint[] }) {
       {/* خط النسبة المئوية */}
       <path d={line} fill="none" stroke="#3e5c99" strokeWidth={2.4} strokeLinejoin="round" />
 
-      {points.map((p, i) => (
-        <g key={`p-${p.month}`}>
-          <circle cx={x(i)} cy={yPct(p.pct)} r={4.2} fill="#fff" stroke="#3e5c99" strokeWidth={2.2} />
-          <text
-            x={x(i)}
-            y={yPct(p.pct) - 11}
-            textAnchor="middle"
-            fontSize={15}
-            fontWeight={700}
-            fill="#3e5c99"
-          >
-            {p.hasEntry ? `${p.pct.toFixed(2)}%` : '—'}
-          </text>
-        </g>
-      ))}
+      {points.map((p, i) => {
+        const tone = p.pct < 0 ? '#a23b33' : '#3e5c99'
+        // نسبة الخسارة تُكتب تحت نقطتها، فلا تصطدم بالعمود النازل
+        const labelY = p.pct < 0 ? yPctOf(p.pct) + 20 : yPctOf(p.pct) - 11
+        return (
+          <g key={`p-${p.month}`}>
+            <circle cx={x(i)} cy={yPctOf(p.pct)} r={4.2} fill="#fff" stroke={tone} strokeWidth={2.2} />
+            <text
+              x={x(i)}
+              y={labelY}
+              textAnchor="middle"
+              fontSize={15}
+              fontWeight={700}
+              fill={tone}
+              /* الرقم لاتيني: إشارة السالب على يساره في كل اللغات */
+              direction="ltr"
+              /* هالة بيضاء تُبقي الرقم مقروءاً فوق عمودٍ نازل */
+              stroke="#fff"
+              strokeWidth={3.5}
+              paintOrder="stroke"
+            >
+              {p.hasEntry ? `${p.pct.toFixed(2)}%` : '—'}
+            </text>
+          </g>
+        )
+      })}
 
       {/* أسماء الأشهر */}
       {points.map((p, i) => (

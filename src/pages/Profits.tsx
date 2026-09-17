@@ -73,17 +73,21 @@ export function Profits({ go }: { go: (r: Route) => void }) {
   }, [month, db.investors.length])
 
   /**
-   * المبلغ الفعلي لصفٍّ ما.
-   * ما يُحفظ دائماً مبلغ؛ النسبة صيغة إدخال تُحلّ إلى مبلغ بحسب رأس مال
-   * صاحبها، فيبقى مصدر الأرقام واحداً مهما اختلفت طريقة الكتابة.
+   * المبلغ الفعلي لصفٍّ ما، و null إن تُرك الحقل فارغاً.
+   *
+   * الصفر قيمة لا فراغ: شهرٌ بلا أرباح واقعة تُسجَّل، وخسارةٌ تُسجَّل
+   * بالسالب. وما يُحفظ دائماً مبلغ؛ النسبة صيغة إدخال تُحلّ إلى مبلغ
+   * بحسب رأس مال صاحبها، فيبقى مصدر الأرقام واحداً مهما اختلفت الكتابة.
    */
-  function amountOf(investorId: string, capital: number): number {
-    const raw = parseAmount(draft[investorId] ?? '')
-    if (!Number.isFinite(raw)) return 0
+  function amountOf(investorId: string, capital: number): number | null {
+    const text = (draft[investorId] ?? '').trim()
+    if (text === '') return null
+    const raw = parseAmount(text)
+    if (!Number.isFinite(raw)) return null
     return units[investorId] === 'pct' ? (capital * raw) / 100 : raw
   }
 
-  const totalDraft = rows.reduce((s, r) => s + amountOf(r.investor.id, r.capital), 0)
+  const totalDraft = rows.reduce((s, r) => s + (amountOf(r.investor.id, r.capital) ?? 0), 0)
 
   function toggleUnit(investorId: string, capital: number) {
     const from = units[investorId] ?? 'amount'
@@ -104,7 +108,7 @@ export function Profits({ go }: { go: (r: Route) => void }) {
 
   function distribute() {
     const value = parseAmount(poolValue)
-    if (!Number.isFinite(value) || value <= 0) return
+    if (!Number.isFinite(value)) return
 
     const nextDraft: Record<string, string> = { ...draft }
     const nextUnits: Record<string, Unit> = { ...units }
@@ -112,7 +116,7 @@ export function Profits({ go }: { go: (r: Route) => void }) {
     if (poolMode === 'pct') {
       // نسبة واحدة للجميع — تبقى نسبةً في الحقول لتُقرأ وتُعدَّل كما هي
       for (const r of rows) {
-        nextDraft[r.investor.id] = r.capital > 0 ? amountInput(value) : ''
+        nextDraft[r.investor.id] = amountInput(value)
         nextUnits[r.investor.id] = 'pct'
       }
     } else {
@@ -122,8 +126,14 @@ export function Profits({ go }: { go: (r: Route) => void }) {
        * التوزيع بالقروش لا بالكسور: تُقرَّب كل حصة إلى قرشين ليُقرأ
        * الرقم، ثم يُعطى الباقي لأصحاب أكبر كسرٍ مهدور. فيساوي مجموع
        * الحصص المبلغَ الموزَّع بالضبط، ولا يظهر فرق قرشٍ في السطر الأخير.
+       *
+       * ويُوزَّع المقدار المطلق ثم تُعاد الإشارة، فتُقسَّم الخسارة على
+       * الحصص كما يُقسَّم الربح تماماً.
        */
-      const cents = Math.round(value * 100)
+      const signed = Math.round(value * 100)
+      const sign = signed < 0 ? -1 : 1
+      const cents = Math.abs(signed)
+
       const exact = rows.map((r) => (r.capital / totalCapital) * cents)
       const share = exact.map((x) => Math.floor(x))
       const byFraction = exact
@@ -134,7 +144,7 @@ export function Profits({ go }: { go: (r: Route) => void }) {
       for (let k = 0; k < byFraction.length && rest > 0; k++, rest--) share[byFraction[k].i] += 1
 
       rows.forEach((r, i) => {
-        nextDraft[r.investor.id] = share[i] > 0 ? amountInput(share[i] / 100) : ''
+        nextDraft[r.investor.id] = amountInput((sign * share[i]) / 100)
         nextUnits[r.investor.id] = 'amount'
       })
     }
@@ -145,18 +155,17 @@ export function Profits({ go }: { go: (r: Route) => void }) {
   }
 
   function save() {
-    const payload = rows
-      .filter((r) => (draft[r.investor.id] ?? '') !== '')
-      .map((r) => {
-        const raw = parseAmount(draft[r.investor.id] ?? '')
-        const asPct = units[r.investor.id] === 'pct' && Number.isFinite(raw)
-        return {
-          investorId: r.investor.id,
-          amount: amountOf(r.investor.id, r.capital),
-          // تُحفظ صورة الإدخال مع المبلغ ليعود الحقل كما كُتب
-          entryPct: asPct ? raw : undefined,
-        }
-      })
+    const payload = rows.map((r) => {
+      const amount = amountOf(r.investor.id, r.capital)
+      const raw = parseAmount(draft[r.investor.id] ?? '')
+      const asPct = amount !== null && units[r.investor.id] === 'pct' && Number.isFinite(raw)
+      return {
+        investorId: r.investor.id,
+        amount,
+        // تُحفظ صورة الإدخال مع المبلغ ليعود الحقل كما كُتب
+        entryPct: asPct ? raw : undefined,
+      }
+    })
     bulkUpsertProfits(month, payload)
     setSaved(true)
   }
@@ -278,7 +287,7 @@ export function Profits({ go }: { go: (r: Route) => void }) {
                 const id = r.investor.id
                 const unit = units[id] ?? 'amount'
                 const amt = amountOf(id, r.capital)
-                const pct = r.capital > 0 ? (amt / r.capital) * 100 : 0
+                const pct = amt !== null && r.capital > 0 ? (amt / r.capital) * 100 : 0
                 const share = totalCapital > 0 ? (r.capital / totalCapital) * 100 : 0
                 return (
                   <tr key={id} className="profit-row">
@@ -314,17 +323,27 @@ export function Profits({ go }: { go: (r: Route) => void }) {
                           {unit === 'pct' ? '%' : sym}
                         </button>
                       </div>
-                      {unit === 'pct' && amt > 0 && (
+                      {unit === 'pct' && amt !== null && (
                         <div className="unit-resolved num">
                           {u.profOfCapital(money(amt, sym))}
                         </div>
                       )}
                     </td>
-                    <td className="num pos" data-label={t.profits.pct}>
-                      {amt ? percent(pct) : '—'}
+                    <td
+                      className={amt !== null && amt < 0 ? 'num neg' : 'num pos'}
+                      data-label={t.profits.pct}
+                    >
+                      {amt !== null ? percent(pct) : '—'}
                     </td>
                     <td data-label={u.profColPayout}>
-                      {r.existing ? (
+                      {/*
+                        الصرف لا يُسأل عنه إلا في شهرٍ رَبِح: الشهر الصفر
+                        لا يُصرف، والخسارة لا تُصرف — فتُذكر حالها ولا
+                        يُعرض زرٌّ لا معنى لضغطه.
+                      */}
+                      {!r.existing ? (
+                        <span className="badge badge-muted">{u.profUnsaved}</span>
+                      ) : r.existing.amount > 0 ? (
                         <button
                           className={r.existing.paid ? 'badge badge-success' : 'badge badge-warn'}
                           style={{ cursor: 'pointer', border: '1px solid' }}
@@ -332,8 +351,10 @@ export function Profits({ go }: { go: (r: Route) => void }) {
                         >
                           {r.existing.paid ? t.investor.paid : t.investor.due}
                         </button>
+                      ) : r.existing.amount < 0 ? (
+                        <span className="badge badge-danger">{u.profLoss}</span>
                       ) : (
-                        <span className="badge badge-muted">{u.profUnsaved}</span>
+                        <span className="badge badge-muted">{u.profZero}</span>
                       )}
                     </td>
                   </tr>

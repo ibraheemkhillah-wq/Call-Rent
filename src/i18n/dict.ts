@@ -234,6 +234,8 @@ export const ar = {
     tagNone: 'لا يوجد قيد',
     tagPaid: 'مصروف',
     tagDue: 'مستحق',
+    tagZero: 'بلا أرباح',
+    tagLoss: 'خسارة',
     totalOf: (label: string) => `الإجمالي — ${label}`,
     monthsRecorded: (n: number) => `${n} شهر مسجّل`,
     movementsTitle: 'حركات رأس المال خلال الفترة',
@@ -438,7 +440,8 @@ export const ar = {
     profTableSub: (total: string, entered: string) =>
       `إجمالي رأس المال في هذا الشهر: ${total} • المُدخل حالياً: ${entered}`,
     profColMonthProfit: (sym: string) => `ربح الشهر (${sym})`,
-    profFootNote: 'الحقول الفارغة تُتجاهل. القيم المحفوظة سابقاً لنفس الشهر سيتم تحديثها.',
+    profFootNote:
+      'اكتب 0 لشهرٍ بلا أرباح، وبالسالب للخسارة — كلاهما يُحفظ ويظهر في التقارير. والحقل الفارغ يعني «لا قيد لهذا الشهر»، فإن أفرغتَ حقلاً محفوظاً رُفع قيده.',
     profSubtitle: 'تسجيل أرباح جميع المستثمرين لشهر واحد دفعة واحدة',
     profNoActive: 'لا يوجد مستثمرون نشطون',
     profNoActiveText: 'أضف مستثمرين أولاً لتتمكن من تسجيل الأرباح الشهرية.',
@@ -458,6 +461,8 @@ export const ar = {
     profColPayout: 'الصرف',
     profNoCapital: 'لا يوجد رأس مال في هذا الشهر',
     profUnsaved: 'غير محفوظ',
+    profZero: 'بلا أرباح',
+    profLoss: 'خسارة',
 
     setDefaultSignatureBack: 'العودة للتوقيع المدمج',
     setSignatureHint2: 'تظهر فوق خط التوقيع في كل تقرير. يُفضّل PNG بخلفية شفافة.',
@@ -955,6 +960,8 @@ export const en: Dict = {
     tagNone: 'No entry',
     tagPaid: 'Paid',
     tagDue: 'Due',
+    tagZero: 'No profit',
+    tagLoss: 'Loss',
     totalOf: (label) => `Total — ${label}`,
     monthsRecorded: (n) => `${n} months recorded`,
     movementsTitle: 'Capital movements during the period',
@@ -1158,7 +1165,8 @@ export const en: Dict = {
     profTableSub: (total, entered) =>
       `Total capital this month: ${total} • entered so far: ${entered}`,
     profColMonthProfit: (sym) => `Month profit (${sym})`,
-    profFootNote: 'Empty fields are ignored. Values already saved for the same month are updated.',
+    profFootNote:
+      'Enter 0 for a month with no profit, or a negative number for a loss — both are saved and appear in reports. An empty field means “no entry for this month”, so clearing a saved field removes its entry.',
     profSubtitle: 'Record profits for every investor for one month at once',
     profNoActive: 'No active investors',
     profNoActiveText: 'Add investors first so you can record monthly profits.',
@@ -1178,6 +1186,8 @@ export const en: Dict = {
     profColPayout: 'Payout',
     profNoCapital: 'No capital in this month',
     profUnsaved: 'Unsaved',
+    profZero: 'No profit',
+    profLoss: 'Loss',
 
     setDefaultSignatureBack: 'Restore built-in signature',
     setSignatureHint2: 'Appears above the signature line in every report. PNG with a transparent background preferred.',
@@ -1660,6 +1670,8 @@ export const tr: Dict = {
     tagNone: 'Kayıt yok',
     tagPaid: 'Ödendi',
     tagDue: 'Bekliyor',
+    tagZero: 'Kâr yok',
+    tagLoss: 'Zarar',
     totalOf: (label) => `Toplam — ${label}`,
     monthsRecorded: (n) => `${n} ay kayıtlı`,
     movementsTitle: 'Dönem içindeki sermaye hareketleri',
@@ -1863,7 +1875,8 @@ export const tr: Dict = {
     profTableSub: (total, entered) =>
       `Bu ayki toplam sermaye: ${total} • şu ana kadar girilen: ${entered}`,
     profColMonthProfit: (sym) => `Ay kârı (${sym})`,
-    profFootNote: 'Boş alanlar yok sayılır. Aynı ay için önceden kaydedilmiş değerler güncellenir.',
+    profFootNote:
+      'Kârsız bir ay için 0, zarar için negatif bir sayı yaz — ikisi de kaydedilir ve raporlarda görünür. Boş alan “bu ay için kayıt yok” demektir; kayıtlı bir alanı boşaltırsan kaydı kaldırılır.',
     profSubtitle: 'Tüm yatırımcıların bir aya ait kârlarını tek seferde kaydedin',
     profNoActive: 'Aktif yatırımcı yok',
     profNoActiveText: 'Aylık kâr kaydedebilmek için önce yatırımcı ekleyin.',
@@ -1883,6 +1896,8 @@ export const tr: Dict = {
     profColPayout: 'Ödeme',
     profNoCapital: 'Bu ayda sermaye yok',
     profUnsaved: 'Kaydedilmedi',
+    profZero: 'Kâr yok',
+    profLoss: 'Zarar',
 
     setDefaultSignatureBack: 'Gömülü imzaya dön',
     setSignatureHint2: 'Her raporda imza çizgisinin üstünde görünür. Şeffaf zeminli PNG tercih edilir.',

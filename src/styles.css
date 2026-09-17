@@ -797,6 +797,13 @@ tfoot td {
   border-color: var(--line);
 }
 
+/* شهر خاسر — يُقرأ خسارةً من لونه قبل قراءة رقمه */
+.badge-danger {
+  background: rgba(224, 115, 107, 0.14);
+  color: var(--danger);
+  border-color: rgba(224, 115, 107, 0.35);
+}
+
 .badge-accent {
   background: var(--accent-soft);
   color: var(--accent);
@@ -1380,6 +1387,13 @@ tfoot td {
   min-width: 0;
   border-start-end-radius: 0;
   border-end-end-radius: 0;
+  /*
+   * الرقم يُكتب ويُقرأ لاتينياً حتى في العربية، وهذا ما يضع إشارة السالب
+   * على يساره. وبدونها تُرسم «‎-800» كأنها «800-»، فتُقرأ ثمانمئة ويُظنّ
+   * أن الإشارة زائدة — والفرق بين ربحٍ وخسارة.
+   */
+  direction: ltr;
+  text-align: end;
 }
 
 .unit-btn {

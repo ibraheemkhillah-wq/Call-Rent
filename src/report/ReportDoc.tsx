@@ -182,11 +182,20 @@ export function ReportDoc({
                 <tr key={m.month} className={m.hasEntry ? '' : 'is-empty'}>
                   <td>{monthLabel(m.month)}</td>
                   <td className="num">{money(m.capital, '')}</td>
-                  <td className="num">{m.hasEntry ? money(m.profit, '') : '—'}</td>
-                  <td className="num">{m.hasEntry ? percent(m.pct) : '—'}</td>
+                  <td className={m.profit < 0 ? 'num loss' : 'num'}>
+                    {m.hasEntry ? money(m.profit, '') : '—'}
+                  </td>
+                  <td className={m.profit < 0 ? 'num loss' : 'num'}>
+                    {m.hasEntry ? percent(m.pct) : '—'}
+                  </td>
                   <td>
+                    {/* شهرٌ بلا ربح وشهرٌ خاسر ليسا «مستحقاً» ولا «مصروفاً» */}
                     {!m.hasEntry ? (
                       <span className="tag tag-none">{d.tagNone}</span>
+                    ) : m.profit < 0 ? (
+                      <span className="tag tag-loss">{d.tagLoss}</span>
+                    ) : m.profit === 0 ? (
+                      <span className="tag tag-none">{d.tagZero}</span>
                     ) : m.paid ? (
                       <span className="tag tag-paid">{d.tagPaid}</span>
                     ) : (
