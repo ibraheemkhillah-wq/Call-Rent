@@ -441,7 +441,7 @@ export const ar = {
       `إجمالي رأس المال في هذا الشهر: ${total} • المُدخل حالياً: ${entered}`,
     profColMonthProfit: (sym: string) => `ربح الشهر (${sym})`,
     profFootNote:
-      'اكتب 0 لشهرٍ بلا أرباح، وبالسالب للخسارة — كلاهما يُحفظ ويظهر في التقارير. والحقل الفارغ يعني «لا قيد لهذا الشهر»، فإن أفرغتَ حقلاً محفوظاً رُفع قيده.',
+      'اكتب لكل مستثمر مبلغه أو نسبته — أيّهما كتبتَ حُسبت لك الأخرى. و0 لشهرٍ بلا أرباح، وبالسالب للخسارة. والحقل الفارغ يعني «لا قيد لهذا الشهر»، فإن أفرغتَ حقلاً محفوظاً رُفع قيده.',
     profSubtitle: 'تسجيل أرباح جميع المستثمرين لشهر واحد دفعة واحدة',
     profNoActive: 'لا يوجد مستثمرون نشطون',
     profNoActiveText: 'أضف مستثمرين أولاً لتتمكن من تسجيل الأرباح الشهرية.',
@@ -454,8 +454,6 @@ export const ar = {
     profDistributePctLabel: 'نسبة موحّدة لكل مستثمر (%)',
     profDistributePctHint: 'أداة مساعدة: يُحسب لكل مستثمر هذه النسبة من رأس ماله',
     profDistributePct: 'طبّق النسبة',
-    profUnitTitle: 'التبديل بين المبلغ والنسبة',
-    profOfCapital: (amount: string) => `= ${amount}`,
     profColEntry: 'ربح الشهر',
     profColShare: 'الحصة',
     profColPayout: 'الصرف',
@@ -463,15 +461,6 @@ export const ar = {
     profUnsaved: 'غير محفوظ',
     profZero: 'بلا أرباح',
     profLoss: 'خسارة',
-    profCustomBadge: 'نسبة خاصة',
-    profCustomReset: 'إرجاعه إلى النسبة الموحّدة',
-    profCustomNote: (n: number) =>
-      n === 1
-        ? 'مستثمر واحد بنسبة خاصة — لن تمسّه النسبة الموحّدة'
-        : n === 2
-          ? 'مستثمران بنسب خاصة — لن تمسّهما النسبة الموحّدة'
-          : `${n} مستثمرين بنسب خاصة — لن تمسّهم النسبة الموحّدة`,
-    profApplyAll: 'طبّقها على الجميع',
 
     setDefaultSignatureBack: 'العودة للتوقيع المدمج',
     setSignatureHint2: 'تظهر فوق خط التوقيع في كل تقرير. يُفضّل PNG بخلفية شفافة.',
@@ -1175,7 +1164,7 @@ export const en: Dict = {
       `Total capital this month: ${total} • entered so far: ${entered}`,
     profColMonthProfit: (sym) => `Month profit (${sym})`,
     profFootNote:
-      'Enter 0 for a month with no profit, or a negative number for a loss — both are saved and appear in reports. An empty field means “no entry for this month”, so clearing a saved field removes its entry.',
+      'For each investor enter either the amount or the rate — whichever you type, the other is worked out for you. Use 0 for a month with no profit and a negative number for a loss. An empty field means “no entry for this month”, so clearing a saved field removes its entry.',
     profSubtitle: 'Record profits for every investor for one month at once',
     profNoActive: 'No active investors',
     profNoActiveText: 'Add investors first so you can record monthly profits.',
@@ -1188,8 +1177,6 @@ export const en: Dict = {
     profDistributePctLabel: 'One percentage for every investor (%)',
     profDistributePctHint: 'Helper: each investor gets this percentage of their own capital',
     profDistributePct: 'Apply percentage',
-    profUnitTitle: 'Switch between amount and percentage',
-    profOfCapital: (amount) => `= ${amount}`,
     profColEntry: 'Month profit',
     profColShare: 'Share',
     profColPayout: 'Payout',
@@ -1197,13 +1184,6 @@ export const en: Dict = {
     profUnsaved: 'Unsaved',
     profZero: 'No profit',
     profLoss: 'Loss',
-    profCustomBadge: 'Custom rate',
-    profCustomReset: 'Return it to the shared rate',
-    profCustomNote: (n) =>
-      n === 1
-        ? '1 investor on a custom rate — the shared rate will not touch them'
-        : `${n} investors on custom rates — the shared rate will not touch them`,
-    profApplyAll: 'Apply to everyone',
 
     setDefaultSignatureBack: 'Restore built-in signature',
     setSignatureHint2: 'Appears above the signature line in every report. PNG with a transparent background preferred.',
@@ -1892,7 +1872,7 @@ export const tr: Dict = {
       `Bu ayki toplam sermaye: ${total} • şu ana kadar girilen: ${entered}`,
     profColMonthProfit: (sym) => `Ay kârı (${sym})`,
     profFootNote:
-      'Kârsız bir ay için 0, zarar için negatif bir sayı yaz — ikisi de kaydedilir ve raporlarda görünür. Boş alan “bu ay için kayıt yok” demektir; kayıtlı bir alanı boşaltırsan kaydı kaldırılır.',
+      'Her yatırımcı için tutarı ya da oranı yaz — hangisini yazarsan diğeri senin için hesaplanır. Kârsız ay için 0, zarar için negatif sayı. Boş alan “bu ay için kayıt yok” demektir; kayıtlı bir alanı boşaltırsan kaydı kaldırılır.',
     profSubtitle: 'Tüm yatırımcıların bir aya ait kârlarını tek seferde kaydedin',
     profNoActive: 'Aktif yatırımcı yok',
     profNoActiveText: 'Aylık kâr kaydedebilmek için önce yatırımcı ekleyin.',
@@ -1905,8 +1885,6 @@ export const tr: Dict = {
     profDistributePctLabel: 'Her yatırımcı için tek yüzde (%)',
     profDistributePctHint: 'Yardımcı: her yatırımcı kendi sermayesinin bu yüzdesini alır',
     profDistributePct: 'Yüzdeyi uygula',
-    profUnitTitle: 'Tutar ile yüzde arasında geçiş',
-    profOfCapital: (amount) => `= ${amount}`,
     profColEntry: 'Ay kârı',
     profColShare: 'Pay',
     profColPayout: 'Ödeme',
@@ -1914,10 +1892,6 @@ export const tr: Dict = {
     profUnsaved: 'Kaydedilmedi',
     profZero: 'Kâr yok',
     profLoss: 'Zarar',
-    profCustomBadge: 'Özel oran',
-    profCustomReset: 'Ortak orana döndür',
-    profCustomNote: (n) => `${n} yatırımcı özel oranda — ortak oran onlara dokunmaz`,
-    profApplyAll: 'Herkese uygula',
 
     setDefaultSignatureBack: 'Gömülü imzaya dön',
     setSignatureHint2: 'Her raporda imza çizgisinin üstünde görünür. Şeffaf zeminli PNG tercih edilir.',

@@ -1418,53 +1418,65 @@ tfoot td {
 /* ═══════════ جدول الأرباح الشهرية ═══════════ */
 
 /* حقل واحد يقبل المبلغ أو النسبة، والزر يبدّل معناه */
-.unit-input {
+/*
+ * خانة رقمية برمزها الثابت.
+ *
+ * الرمز ملصقٌ لا زرّ: المبلغ في خانته والنسبة في خانتها، فلا يحتاج
+ * المستخدم أن يتذكّر ما الذي يعنيه الرقم الذي يكتبه.
+ */
+.num-input {
   display: flex;
   align-items: stretch;
-  gap: 0;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  background: var(--input-bg);
+  overflow: hidden;
 }
 
-.unit-input input {
+.num-input:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.num-input input {
   flex: 1 1 auto;
   min-width: 0;
-  border-start-end-radius: 0;
-  border-end-end-radius: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
   /*
-   * الرقم يُكتب ويُقرأ لاتينياً حتى في العربية، وهذا ما يضع إشارة السالب
-   * على يساره. وبدونها تُرسم «‎-800» كأنها «800-»، فتُقرأ ثمانمئة ويُظنّ
-   * أن الإشارة زائدة — والفرق بين ربحٍ وخسارة.
+   * الرقم يُكتب ويُقرأ لاتينياً حتى في العربية، وهذا ما يضع إشارة
+   * السالب على يساره. وبدونها تُرسم «‎-800» كأنها «800-»، فتُقرأ
+   * ثمانمئة ويُظنّ أن الإشارة زائدة — والفرق بين ربحٍ وخسارة.
    */
   direction: ltr;
   text-align: end;
 }
 
-.unit-btn {
+.num-input input:focus {
+  box-shadow: none;
+}
+
+.num-input input:disabled {
+  opacity: 0.45;
+}
+
+.num-unit {
   flex: none;
-  width: 46px;
-  border: 1px solid var(--input-border);
-  border-inline-start: 0;
-  border-start-start-radius: 0;
-  border-end-start-radius: 0;
-  border-start-end-radius: var(--radius-sm);
-  border-end-end-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  width: 34px;
+  border-inline-start: 1px solid var(--input-border);
   background: var(--btn-bg);
-  color: var(--accent);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-.unit-btn:hover {
-  background: var(--hover-strong);
-  color: var(--heading);
-}
-
-.unit-resolved {
-  margin-top: 4px;
-  font-size: 11.5px;
   color: var(--muted);
+  font-size: 13px;
 }
+
+/* الخسارة تُلوَّن في خانتها فتُقرأ قبل أن يُقرأ رقمها */
+.num-input.is-neg input {
+  color: var(--danger);
+}
+
 
 /* شريط التوزيع الجماعي داخل شريط الأدوات — لا يتمدّد كحقل كامل */
 .seg-tight .seg-btn {
@@ -1672,7 +1684,7 @@ tfoot td {
   }
 
   /* حقل الإدخال يأخذ ما يتّسع له، فيبقى الرقم مقروءاً */
-  .stack-table td .unit-input {
+  .stack-table td .num-input {
     flex: 1 1 auto;
     min-width: 0;
     max-width: 60%;
@@ -1804,60 +1816,3 @@ tfoot td {
 }
 
 /* ═══════════ النسبة الموحّدة ومن خرج عنها ═══════════ */
-
-/*
- * سطرٌ يقول من لن تمسّه النسبة الموحّدة، ويعرض تجاوزه بزرٍّ صريح.
- * بدونه يضغط المستخدم «طبّق» فيمحو نسباً خصّصها بنفسه ولا يدري.
- */
-.shared-note {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin: -6px 0 18px;
-  padding: 9px 14px;
-  border: 1px solid var(--warn);
-  border-radius: var(--radius);
-  background: var(--surface-solid-1);
-  font-size: 13px;
-  color: var(--text-dim);
-}
-
-.shared-dot {
-  flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--warn);
-}
-
-.shared-note .btn {
-  margin-inline-start: auto;
-}
-
-/* وسم الصف صاحب النسبة الخاصة — وضغطه يُرجعه إلى الموحّدة */
-.custom-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  margin-top: 6px;
-  padding: 2px 8px;
-  border: 1px solid var(--warn);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--warn);
-  font-size: 11.5px;
-  font-family: inherit;
-  cursor: pointer;
-}
-
-.custom-tag:hover {
-  background: var(--hover);
-}
-
-/* زرّ الوحدة يُبرز نفسه حين يكون المكتوب نسبةً لا مبلغاً */
-.unit-btn.is-pct {
-  background: var(--accent);
-  color: var(--btn-bg);
-  font-weight: 700;
-}

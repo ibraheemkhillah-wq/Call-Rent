@@ -121,8 +121,13 @@ export const openMonth = async (page, month) => {
   await page.waitForTimeout(450)
 }
 
-export const fields = (page) => page.locator('.profit-row .unit-input input')
+/** خانات المبلغ في صفوف المستثمرين */
+export const fields = (page) => page.locator('.profit-row .cell-amount input')
+/** خانات النسبة */
+export const pctFields = (page) => page.locator('.profit-row .cell-pct input')
+
 export const values = (page) => fields(page).evaluateAll((e) => e.map((x) => x.value))
+export const pctValues = (page) => pctFields(page).evaluateAll((e) => e.map((x) => x.value))
 
 /** يحفظ أرباح الشهر ثم يثبّتها من شريط التعديلات المعلّقة */
 export const commit = async (page) => {

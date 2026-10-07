@@ -3,7 +3,8 @@
  * الفاصلة العشرية، وثبات القيمة بعد الخروج من الشاشة والعودة إليها.
  */
 import {
-  commit, dbOf, fields, launch, nav, openMonth, reporter, seed, storedProfits, values,
+  commit, dbOf, fields, launch, nav, openMonth, pctFields, pctValues, reporter, seed,
+  storedProfits, values,
 } from './browser.mjs'
 
 const { ok, done } = reporter()
@@ -41,10 +42,9 @@ await page.waitForTimeout(300)
 await page.locator('.toolbar input[inputmode=decimal]').fill('2,5')
 await page.getByRole('button', { name: 'طبّق النسبة' }).click()
 await page.waitForTimeout(400)
-v = await values(page)
-ok('«2,5» تُقرأ 2.5 للجميع', v.every((x) => x === '2.5'), v.join(' / '))
-const resolved = await page.locator('.unit-resolved').allTextContents()
-ok('2.5% من 20,000 = 500', resolved[0].includes('500.00'), resolved[0])
+let p = await pctValues(page)
+ok('«2,5» تُقرأ 2.5 للجميع', p.every((x) => x === '2.5'), p.join(' / '))
+ok('2.5% من 20,000 = 500', (await values(page))[0] === '500', (await values(page))[0])
 
 await commit(page)
 ps = await storedProfits(page)
@@ -53,20 +53,15 @@ ok('مجموع أرباح النسبة 2,500', near(ps.reduce((s, p) => s + p.am
 /* ٣) القيمة لا تتغيّر بالخروج والعودة */
 await nav(page, 'لوحة المعلومات')
 await openMonth(page, '2026-03')
+p = await pctValues(page)
+ok('بعد العودة: النسبة كما كُتبت', p.every((x) => x === '2.5'), p.join(' / '))
 v = await values(page)
-ok('بعد العودة: النسبة كما كُتبت', v.every((x) => x === '2.5'), v.join(' / '))
-const pcts = await page.locator('.profit-row td[data-label="النسبة"]').allTextContents()
-ok('النسبة المعروضة 2.50%', pcts.every((x) => x.trim() === '2.50%'), pcts.join(' / '))
+ok('ومبالغها معها', v.join('/') === '500/750/1250', v.join(' / '))
 
-/* ٤) التبديل بين النسبة والمبلغ */
-await page.locator('.profit-row .unit-btn').first().click()
+/* ٤) تعديل النسبة يُحدّث مبلغها في الحال */
+await pctFields(page).first().fill('4')
 await page.waitForTimeout(300)
-v = await values(page)
-ok('النسبة تتحوّل مبلغاً 500', v[0] === '500', v[0])
-await page.locator('.profit-row .unit-btn').first().click()
-await page.waitForTimeout(300)
-v = await values(page)
-ok('والعودة تُرجعها 2.5', v[0] === '2.5', v[0])
+ok('4% من 20,000 = 800', (await values(page))[0] === '800', (await values(page))[0])
 
 ok('بلا أخطاء في الطرفية', errors.length === 0, errors.slice(0, 3).join(' | '))
 

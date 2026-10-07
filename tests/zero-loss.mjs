@@ -5,7 +5,7 @@
  * وحقلٌ يُفرَغ يرفع قيده. وتوزيعٌ بالسالب يُقسَّم بالحصص كالموجب.
  */
 import {
-  commit, dbOf, fields, launch, nav, openMonth, reporter, seed, storedProfits, values,
+  commit, dbOf, fields, launch, nav, openMonth, pctValues, reporter, seed, storedProfits, values,
 } from './browser.mjs'
 
 const { ok, done } = reporter()
@@ -32,10 +32,10 @@ await fields(page).nth(0).fill('0')
 await fields(page).nth(1).fill('-500')
 await page.waitForTimeout(300)
 
-const pcts = await page.locator('.profit-row td[data-label="النسبة"]').allTextContents()
-ok('نسبة الصفر تُعرض 0.00% لا شرطة', pcts[0].trim() === '0.00%', pcts[0])
-ok('نسبة الخسارة سالبة', pcts[1].trim() === '-1.25%', pcts[1])
-ok('خانة الخسارة بلون السالب', (await page.locator('.profit-row td.neg').count()) === 1)
+const pcts = await pctValues(page)
+ok('نسبة الصفر تُحسب 0 لا فراغاً', pcts[0] === '0', pcts[0])
+ok('نسبة الخسارة سالبة', pcts[1] === '-1.25', pcts[1])
+ok('خانتا الخسارة بلون السالب', (await page.locator('.profit-row .num-input.is-neg').count()) === 2)
 
 await commit(page)
 let ps = await storedProfits(page)
