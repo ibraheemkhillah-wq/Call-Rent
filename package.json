@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "deploy": "bash scripts/deploy-pages.sh",
-    "build:single": "vite build --config vite.single.mjs"
+    "build:single": "vite build --config vite.single.mjs",
+    "test:ui": "node tests/rates.mjs && node tests/zero-loss.mjs && node tests/profits.mjs"
   },
   "dependencies": {
     "html-to-image": "^1.11.13",

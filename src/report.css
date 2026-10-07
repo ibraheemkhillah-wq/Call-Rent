@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════
    تصميم التقرير — صفحة A4 واحدة، فاخرة ومضغوطة
-   الهوية: كحلي #182B56 + أبيض
+   الهوية: كحلي بترولي #1D4663 + برتقالي #F48D57 + أبيض
    ═══════════════════════════════════════════════════════════ */
 
 /*
@@ -60,16 +60,20 @@
 }
 
 .doc {
-  /* ◆ الكحلي الرسمي من الشعار */
-  --d-navy: #182b56;
-  --d-navy-soft: #223a6b;
+  /* ◆ الكحلي البترولي الرسمي من الشعار */
+  --d-navy: #1d4663;
+  --d-navy-soft: #265877;
   /* أزرق فولاذي للإبراز فوق الورق الأبيض */
-  --d-accent: #3e5c99;
-  --d-accent-light: #9fb2d8;
-  --d-ink: #16203a;
-  --d-muted: #6b7690;
-  --d-line: #dbe1ec;
-  --d-cream: #f4f7fc;
+  --d-accent: #2f6a8e;
+  --d-accent-light: #9bbacc;
+  /* ◆ البرتقالي الرسمي — للمستحقّ وما يستوقف العين وحده */
+  --d-orange: #d9733d;
+  --d-orange-line: #f0a87c;
+  --d-orange-soft: #fdeee3;
+  --d-ink: #13293a;
+  --d-muted: #64798a;
+  --d-line: #d8e2e9;
+  --d-cream: #f2f7fa;
 
   /*
    * --page مُعامل تكبير الصفحة. يبقى 1 عادةً؛ وإن طال المحتوى (تقرير
@@ -303,7 +307,8 @@
 }
 
 .lg-line {
-  background: var(--d-accent);
+  /* يطابق لون خط النسبة في الرسم — الدليل لا يُخالف ما يدلّ عليه */
+  background: var(--d-orange);
   border-radius: 50%;
 }
 
@@ -498,9 +503,9 @@
 }
 
 .doc .tag-due {
-  color: #9a6f1f;
-  border-color: #e2cd9d;
-  background: #fbf5e8;
+  color: #8a3f10;
+  border-color: var(--d-orange-line);
+  background: var(--d-orange-soft);
 }
 
 .doc .tag-none {
@@ -758,25 +763,25 @@
  * تحمل direction: ltr، فالحدود المنطقية تنقلب عليها وحدها.
  */
 .doc table tbody tr.due-row td {
-  background: #fdeecd;
-  color: #7a4d05;
-  border-block: 1.6px solid #d99524;
+  background: var(--d-orange-soft);
+  color: #8a3f10;
+  border-block: 1.6px solid var(--d-orange-line);
 }
 
 .doc[dir='rtl'] table tbody tr.due-row td:first-child {
-  border-right: 1.6px solid #d99524;
+  border-right: 1.6px solid var(--d-orange-line);
 }
 
 .doc[dir='rtl'] table tbody tr.due-row td:last-child {
-  border-left: 1.6px solid #d99524;
+  border-left: 1.6px solid var(--d-orange-line);
 }
 
 .doc[dir='ltr'] table tbody tr.due-row td:first-child {
-  border-left: 1.6px solid #d99524;
+  border-left: 1.6px solid var(--d-orange-line);
 }
 
 .doc[dir='ltr'] table tbody tr.due-row td:last-child {
-  border-right: 1.6px solid #d99524;
+  border-right: 1.6px solid var(--d-orange-line);
 }
 
 /* المستحقّ نفسه أثقل من بقية الصفّ: هو المقصود لا جاره */

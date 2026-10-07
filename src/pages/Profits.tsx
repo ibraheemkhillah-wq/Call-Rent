@@ -4,7 +4,7 @@ import { useT } from '../i18n'
 import { capitalAtMonthEnd } from '../lib/calc'
 import { amountInput, currentMonthKey, money, monthLabel, parseAmount, percent } from '../lib/format'
 import { Empty, Field } from '../components/ui'
-import { IconCheck, IconChart, IconUsers } from '../components/Icons'
+import { IconCheck, IconChart, IconUndo, IconUsers } from '../components/Icons'
 import type { Route } from '../App'
 
 /** وحدة إدخال ربح المستثمر: مبلغ بالعملة أو نسبة من رأس ماله */
@@ -21,6 +21,14 @@ export function Profits({ go }: { go: (r: Route) => void }) {
   const [draft, setDraft] = useState<Record<string, string>>({})
   /** وحدة كل صف على حدة، فيُدخل مستثمر بمبلغ وآخر بنسبة في الشهر نفسه */
   const [units, setUnits] = useState<Record<string, Unit>>({})
+  /**
+   * من خرج عن النسبة الموحّدة.
+   *
+   * لا معنى لنسبةٍ موحّدة إن كانت تمحو ما خصّصه المستخدم لمستثمرٍ بعينه.
+   * فمن كُتب له رقمٌ بيده صار «خاصاً»، ولا تمسّه النسبة الموحّدة بعدها
+   * إلا بطلبٍ صريح. وهكذا يجتمع الأمران: واحدة للجميع، وخاصة لمن يستحق.
+   */
+  const [custom, setCustom] = useState<Record<string, boolean>>({})
   /** التوزيع الجماعي: مبلغ إجمالي يُقسَّم، أو نسبة واحدة تُطبَّق على الجميع */
   const [poolMode, setPoolMode] = useState<Unit>('amount')
   const [poolValue, setPoolValue] = useState('')
@@ -66,8 +74,39 @@ export function Profits({ go }: { go: (r: Route) => void }) {
       nextDraft[r.investor.id] = amountInput(asPct ? (pct as number) : saved.amount)
       nextUnits[r.investor.id] = asPct ? 'pct' : 'amount'
     }
+    /*
+     * النسبة الموحّدة تُستنتج ولا تُخزَّن: هي النسبة التي يتشارك فيها
+     * أكثر من مستثمر. ومن خالفها فله نسبة خاصة، فيعود الشهر المحفوظ
+     * كما تُرك: الموحّدة في خانتها، والخاصّة موسومةً عند أصحابها.
+     */
+    const pctOf = (id: string) =>
+      nextUnits[id] === 'pct' && nextDraft[id] !== '' ? nextDraft[id] : null
+
+    const tally = new Map<string, number>()
+    for (const r of rows) {
+      const v = pctOf(r.investor.id)
+      if (v !== null) tally.set(v, (tally.get(v) ?? 0) + 1)
+    }
+    let shared = ''
+    let most = 1
+    for (const [v, n] of tally) {
+      if (n > most) { shared = v; most = n }
+    }
+
+    const nextCustom: Record<string, boolean> = {}
+    for (const r of rows) {
+      const v = pctOf(r.investor.id)
+      // الفارغ يتبع الموحّدة، والمكتوب بخلافها خاصٌّ بصاحبه
+      nextCustom[r.investor.id] = nextDraft[r.investor.id] !== '' && v !== shared
+    }
+
     setDraft(nextDraft)
     setUnits(nextUnits)
+    setCustom(nextCustom)
+    if (shared) {
+      setPoolMode('pct')
+      setPoolValue(shared)
+    }
     setSaved(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [month, db.investors.length])
@@ -103,24 +142,51 @@ export function Profits({ go }: { go: (r: Route) => void }) {
 
     setUnits({ ...units, [investorId]: to })
     setDraft({ ...draft, [investorId]: next })
+    setCustom({ ...custom, [investorId]: true })
     setSaved(false)
   }
 
-  function distribute() {
+  /** يُعيد صفاً إلى النسبة الموحّدة — ويأخذها فوراً إن كانت مكتوبة */
+  function unsetCustom(investorId: string) {
+    setCustom({ ...custom, [investorId]: false })
+    const value = parseAmount(poolValue)
+    if (poolMode === 'pct' && poolValue !== '' && Number.isFinite(value)) {
+      setDraft({ ...draft, [investorId]: amountInput(value) })
+      setUnits({ ...units, [investorId]: 'pct' })
+    }
+    setSaved(false)
+  }
+
+  /** من ستشمله النسبة الموحّدة: الجميع، أو من لم يُخصَّص له شيء */
+  const customIds = rows.filter((r) => custom[r.investor.id]).map((r) => r.investor.id)
+  const customCount = customIds.length
+
+  /**
+   * تطبيق الموحّدة.
+   *
+   * `all` تعني أن المستخدم طلبها صراحةً على الجميع، فتُلغى الخصوصيات.
+   * وبدونها لا تُمسّ النسب الخاصة، ويُقسَّم المبلغ على الباقين وحدهم.
+   */
+  function distribute(all = false) {
     const value = parseAmount(poolValue)
     if (!Number.isFinite(value)) return
+
+    const targets = all ? rows : rows.filter((r) => !custom[r.investor.id])
+    if (targets.length === 0) return
 
     const nextDraft: Record<string, string> = { ...draft }
     const nextUnits: Record<string, Unit> = { ...units }
 
     if (poolMode === 'pct') {
       // نسبة واحدة للجميع — تبقى نسبةً في الحقول لتُقرأ وتُعدَّل كما هي
-      for (const r of rows) {
+      for (const r of targets) {
         nextDraft[r.investor.id] = amountInput(value)
         nextUnits[r.investor.id] = 'pct'
       }
     } else {
-      if (totalCapital <= 0) return
+      // المبلغ يُقسَّم على من ستشملهم القسمة وحدهم، بنسبة رؤوس أموالهم
+      const base = targets.reduce((s, r) => s + r.capital, 0)
+      if (base <= 0) return
 
       /*
        * التوزيع بالقروش لا بالكسور: تُقرَّب كل حصة إلى قرشين ليُقرأ
@@ -134,7 +200,7 @@ export function Profits({ go }: { go: (r: Route) => void }) {
       const sign = signed < 0 ? -1 : 1
       const cents = Math.abs(signed)
 
-      const exact = rows.map((r) => (r.capital / totalCapital) * cents)
+      const exact = targets.map((r) => (r.capital / base) * cents)
       const share = exact.map((x) => Math.floor(x))
       const byFraction = exact
         .map((x, i) => ({ i, frac: x - Math.floor(x) }))
@@ -143,7 +209,7 @@ export function Profits({ go }: { go: (r: Route) => void }) {
       let rest = cents - share.reduce((s, x) => s + x, 0)
       for (let k = 0; k < byFraction.length && rest > 0; k++, rest--) share[byFraction[k].i] += 1
 
-      rows.forEach((r, i) => {
+      targets.forEach((r, i) => {
         nextDraft[r.investor.id] = amountInput((sign * share[i]) / 100)
         nextUnits[r.investor.id] = 'amount'
       })
@@ -151,6 +217,8 @@ export function Profits({ go }: { go: (r: Route) => void }) {
 
     setDraft(nextDraft)
     setUnits(nextUnits)
+    // ما شملته الموحّدة لم يعد خاصاً
+    if (all) setCustom({})
     setSaved(false)
   }
 
@@ -256,11 +324,26 @@ export function Profits({ go }: { go: (r: Route) => void }) {
           />
         </Field>
 
-        <button className="btn" onClick={distribute} disabled={!poolValue}>
+        <button className="btn" onClick={() => distribute()} disabled={!poolValue}>
           <IconChart className="btn-icon" />
           {poolMode === 'pct' ? u.profDistributePct : t.profits.distribute}
         </button>
       </div>
+
+      {/* من خرج عن الموحّدة يُقال صراحةً، ويبقى تجاوزه بيد المستخدم */}
+      {customCount > 0 && (
+        <div className="shared-note no-print">
+          <span className="shared-dot" />
+          <span>{u.profCustomNote(customCount)}</span>
+          <button
+            className="btn btn-sm"
+            onClick={() => distribute(true)}
+            disabled={!poolValue}
+          >
+            {u.profApplyAll}
+          </button>
+        </div>
+      )}
 
       <div className="card">
         <div className="card-title">{u.profTableTitle(monthLabel(month))}</div>
@@ -310,12 +393,13 @@ export function Profits({ go }: { go: (r: Route) => void }) {
                           value={draft[id] ?? ''}
                           onChange={(e) => {
                             setDraft({ ...draft, [id]: e.target.value })
+                            setCustom({ ...custom, [id]: true })
                             setSaved(false)
                           }}
                           placeholder="0.00"
                         />
                         <button
-                          className="unit-btn"
+                          className={unit === 'pct' ? 'unit-btn is-pct' : 'unit-btn'}
                           title={u.profUnitTitle}
                           aria-label={u.profUnitTitle}
                           onClick={() => toggleUnit(id, r.capital)}
@@ -327,6 +411,16 @@ export function Profits({ go }: { go: (r: Route) => void }) {
                         <div className="unit-resolved num">
                           {u.profOfCapital(money(amt, sym))}
                         </div>
+                      )}
+                      {custom[id] && (
+                        <button
+                          className="custom-tag"
+                          onClick={() => unsetCustom(id)}
+                          title={u.profCustomReset}
+                        >
+                          {u.profCustomBadge}
+                          <IconUndo size={13} />
+                        </button>
                       )}
                     </td>
                     <td

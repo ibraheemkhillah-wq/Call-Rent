@@ -192,3 +192,11 @@ export const IconAlert = ({ className, size = 18 }: P) => (
     <path d="M12 17.2v.2" />
   </svg>
 )
+
+/** سهم رجوع — لإرجاع قيمة إلى أصلها */
+export const IconUndo = ({ className, size = 15 }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M9 14L4 9l5-5" />
+    <path d="M4 9h9a6 6 0 010 12h-3" />
+  </svg>
+)

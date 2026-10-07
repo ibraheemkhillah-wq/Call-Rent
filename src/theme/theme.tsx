@@ -80,7 +80,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // لون شريط الحالة على الجوال عند فتحه كتطبيق مثبّت
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', theme === 'light' ? '#F2F5FA' : '#182B56')
+      ?.setAttribute('content', theme === 'light' ? '#EEF3F7' : '#0B1F2D')
   }, [theme])
 
   const setMode = useCallback((m: ThemeMode) => {

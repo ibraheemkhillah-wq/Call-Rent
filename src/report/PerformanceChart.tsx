@@ -72,7 +72,7 @@ export function PerformanceChart({ points }: { points: SeriesPoint[] }) {
           x2={W - PAD_X}
           y1={PAD_T + plotH * f}
           y2={PAD_T + plotH * f}
-          stroke="#e3e8f1"
+          stroke="#e1eaef"
           strokeWidth={1}
         />
       ))}
@@ -101,16 +101,16 @@ export function PerformanceChart({ points }: { points: SeriesPoint[] }) {
             width={barW}
             height={Math.max(Math.abs(end - zeroY), 0)}
             rx={3}
-            fill={loss ? (p.inPeriod ? '#a23b33' : '#e0b4b0') : p.inPeriod ? '#182b56' : '#c3cede'}
+            fill={loss ? (p.inPeriod ? '#a23b33' : '#e0b4b0') : p.inPeriod ? '#1d4663' : '#bdd2de'}
           />
         )
       })}
 
       {/* خط النسبة المئوية */}
-      <path d={line} fill="none" stroke="#3e5c99" strokeWidth={2.4} strokeLinejoin="round" />
+      <path d={line} fill="none" stroke="#d9733d" strokeWidth={2.4} strokeLinejoin="round" />
 
       {points.map((p, i) => {
-        const tone = p.pct < 0 ? '#a23b33' : '#3e5c99'
+        const tone = p.pct < 0 ? '#a23b33' : '#d9733d'
         // نسبة الخسارة تُكتب تحت نقطتها، فلا تصطدم بالعمود النازل
         const labelY = p.pct < 0 ? yPctOf(p.pct) + 20 : yPctOf(p.pct) - 11
         return (
@@ -144,7 +144,7 @@ export function PerformanceChart({ points }: { points: SeriesPoint[] }) {
           y={H - 14}
           textAnchor="middle"
           fontSize={15}
-          fill={p.inPeriod ? '#182b56' : '#8a93a6'}
+          fill={p.inPeriod ? '#1d4663' : '#8699a6'}
           fontWeight={p.inPeriod ? 600 : 400}
         >
           {dict().monthsShort[Number(p.month.slice(5)) - 1]}

@@ -463,6 +463,15 @@ export const ar = {
     profUnsaved: 'غير محفوظ',
     profZero: 'بلا أرباح',
     profLoss: 'خسارة',
+    profCustomBadge: 'نسبة خاصة',
+    profCustomReset: 'إرجاعه إلى النسبة الموحّدة',
+    profCustomNote: (n: number) =>
+      n === 1
+        ? 'مستثمر واحد بنسبة خاصة — لن تمسّه النسبة الموحّدة'
+        : n === 2
+          ? 'مستثمران بنسب خاصة — لن تمسّهما النسبة الموحّدة'
+          : `${n} مستثمرين بنسب خاصة — لن تمسّهم النسبة الموحّدة`,
+    profApplyAll: 'طبّقها على الجميع',
 
     setDefaultSignatureBack: 'العودة للتوقيع المدمج',
     setSignatureHint2: 'تظهر فوق خط التوقيع في كل تقرير. يُفضّل PNG بخلفية شفافة.',
@@ -1188,6 +1197,13 @@ export const en: Dict = {
     profUnsaved: 'Unsaved',
     profZero: 'No profit',
     profLoss: 'Loss',
+    profCustomBadge: 'Custom rate',
+    profCustomReset: 'Return it to the shared rate',
+    profCustomNote: (n) =>
+      n === 1
+        ? '1 investor on a custom rate — the shared rate will not touch them'
+        : `${n} investors on custom rates — the shared rate will not touch them`,
+    profApplyAll: 'Apply to everyone',
 
     setDefaultSignatureBack: 'Restore built-in signature',
     setSignatureHint2: 'Appears above the signature line in every report. PNG with a transparent background preferred.',
@@ -1898,6 +1914,10 @@ export const tr: Dict = {
     profUnsaved: 'Kaydedilmedi',
     profZero: 'Kâr yok',
     profLoss: 'Zarar',
+    profCustomBadge: 'Özel oran',
+    profCustomReset: 'Ortak orana döndür',
+    profCustomNote: (n) => `${n} yatırımcı özel oranda — ortak oran onlara dokunmaz`,
+    profApplyAll: 'Herkese uygula',
 
     setDefaultSignatureBack: 'Gömülü imzaya dön',
     setSignatureHint2: 'Her raporda imza çizgisinin üstünde görünür. Şeffaf zeminli PNG tercih edilir.',
